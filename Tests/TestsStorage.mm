@@ -17,9 +17,18 @@
 
 // Constructors and copy/move assignment
 - (void)testEmptyInitialize {
+    npp::Storage<int> storage;
+    XCTAssertEqual(storage.size(), 0);
+    XCTAssertEqual(storage.capacity(), 0);
+    XCTAssertEqual(storage.shape().size(), 0);
+}
+
+- (void)testReserveInitialize {
     npp::Storage<int> storage(3);
     XCTAssertEqual(storage.size(), 0);
     XCTAssertEqual(storage.capacity(), 3);
+    XCTAssertEqual(storage.shape().size(), 1);
+    XCTAssertEqual(storage.shape()[0], 3);
 }
 
 - (void)testSizeAndCapacity {
@@ -34,6 +43,13 @@
     XCTAssertEqual(storage1.capacity(), 1);
     XCTAssertEqual(storage3.capacity(), 3);
     XCTAssertEqual(storage0.capacity(), 0);
+    
+    XCTAssertEqual(storage1.shape().size(), 1);
+    XCTAssertEqual(storage3.shape().size(), 1);
+    XCTAssertEqual(storage0.shape().size(), 0);
+    
+    XCTAssertEqual(storage1.shape()[0], 1);
+    XCTAssertEqual(storage3.shape()[0], 3);
 }
 
 - (void)testCopyConstruct {
@@ -42,6 +58,8 @@
     
     XCTAssertEqual(otherStorage.size(), 3);
     XCTAssertEqual(otherStorage.capacity(), 3);
+    XCTAssertEqual(otherStorage.shape().size(), 1);
+    XCTAssertEqual(otherStorage.shape()[0], 3);
 
     int i = 0;
     for (auto element: storage) {
@@ -59,10 +77,14 @@
 
 - (void)testCopyAssignment {
     npp::Storage<int> storage {1, 2, 3};
-    npp::Storage<int> otherStorage = storage;
+    npp::Storage<int> otherStorage;
+    otherStorage = storage;
     
     XCTAssertEqual(otherStorage.size(), 3);
     XCTAssertEqual(otherStorage.capacity(), 3);
+    XCTAssertEqual(otherStorage.shape().size(), 1);
+    XCTAssertEqual(otherStorage.shape()[0], 3);
+
     
     int i = 0;
     for (auto element: storage) {
@@ -84,6 +106,9 @@
     
     XCTAssertEqual(otherStorage.size(), 3);
     XCTAssertEqual(otherStorage.capacity(), 3);
+    XCTAssertEqual(otherStorage.shape().size(), 1);
+    XCTAssertEqual(otherStorage.shape()[0], 3);
+
     int i = 0;
     for (auto element: otherStorage) {
         XCTAssertEqual(element, i++);
@@ -92,10 +117,14 @@
 
 - (void)testMoveAssignment {
     npp::Storage<int> storage {1, 2, 3};
-    npp::Storage<int> otherStorage = std::move(storage);
+    npp::Storage<int> otherStorage;
+    otherStorage = std::move(storage);
     
     XCTAssertEqual(otherStorage.size(), 3);
     XCTAssertEqual(otherStorage.capacity(), 3);
+    XCTAssertEqual(otherStorage.shape().size(), 1);
+    XCTAssertEqual(otherStorage.shape()[0], 3);
+
     XCTAssertEqual(otherStorage[0], 1);
     XCTAssertEqual(otherStorage[1], 2);
     XCTAssertEqual(otherStorage[2], 3);

@@ -32,11 +32,14 @@ class Storage {
   using pointer_type = typename std::add_pointer_t<base_type>;
   using Container_noref = typename std::remove_reference_t<Container>;
   using Container_ref = typename std::add_lvalue_reference_t<Container_noref>;
+  using Container_ref_const =
+      typename std::add_lvalue_reference_t<Container_noref const>;
   using iterator = typename Container_noref::iterator;
   using const_iterator = typename Container_noref::const_iterator;
 
   /* member variables */
   Container data{};
+  vector<size_t> shape_{};
 
   /* helper functions */
   bool out_of_bound(int i);
@@ -47,6 +50,7 @@ class Storage {
 
  public:
   /* constructors */
+  Storage() = default;
   Storage(initializer_list<T> l);
   Storage(Storage<T, Container_noref>& other);
   Storage(Storage<T, Container_ref>& other);
@@ -55,17 +59,25 @@ class Storage {
   Storage(Container_ref c);
   explicit Storage(size_t capacity);
 
+  /* copy and move assignments */
+  Storage<T, Container>& operator=(Storage<T, Container> const& other) =
+      default;
+  Storage<T, Container>& operator=(Storage<T, Container> const&& other) =
+      default;
+
   /* getters */
   Container_ref getData() { return data; }
-  Container_ref const getData() const { return data; }
+  Container_ref_const getData() const { return data; }
+  vector<size_t>& shape() { return shape_; }
+  vector<size_t> const& shape() const { return shape_; }
 
   /* object state inspectors */
   constexpr size_t size() const noexcept { return data.size(); }
   constexpr size_t capacity() const noexcept { return data.capacity(); }
 
   /* indexing and iterators */
-  std::remove_pointer_t<T> const& operator[](int i) const;
-  std::remove_pointer_t<T>& operator[](int i);
+  base_type const& operator[](int i) const;
+  base_type& operator[](int i);
 
   iterator begin() { return data.begin(); }
   const_iterator cbegin() { return data.cbegin(); }
@@ -80,31 +92,33 @@ class Storage {
 /* constructors */
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(initializer_list<T> l) : data(l) {}
+Storage<T, Container>::Storage(initializer_list<T> l)
+    : data(l), shape_({capacity()}) {}
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(size_t capacity) {
+Storage<T, Container>::Storage(size_t capacity) : shape_({capacity}) {
   data.reserve(capacity);
 }
 
 template <typename T, typename Container>
 Storage<T, Container>::Storage(Storage<T, Container_noref>& other)
-    : data(other.getData()) {}
+    : data(other.getData()), shape_(other.shape()) {}
 
 template <typename T, typename Container>
 Storage<T, Container>::Storage(Storage<T, Container_ref>& other)
-    : data(other.getData()) {}
+    : data(other.getData()), shape_(other.shape()) {}
 
 template <typename T, typename Container>
 Storage<T, Container>::Storage(Storage<T, Container_noref>&& other)
-    : data(std::move(other.getData())) {}
+    : data(std::move(other.getData())), shape_(std::move(other.shape())) {}
 
 template <typename T, typename Container>
 Storage<T, Container>::Storage(Storage<T, Container_ref>&& other)
-    : data(std::move(other.getData())) {}
+    : data(std::move(other.getData())), shape_(std::move(other.shape())) {}
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(Container_ref c) : data(c) {}
+Storage<T, Container>::Storage(Container_ref c)
+    : data(c), shape_({capacity()}) {}
 
 /* helper functions */
 
