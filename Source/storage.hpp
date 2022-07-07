@@ -14,6 +14,9 @@
 #include <utility>
 #include <vector>
 
+#include "shape.hpp"
+#include "utilities.hpp"
+
 namespace npp {
 
 using std::initializer_list;
@@ -32,14 +35,14 @@ class Storage {
   using pointer_type = typename std::add_pointer_t<base_type>;
   using Container_noref = typename std::remove_reference_t<Container>;
   using Container_ref = typename std::add_lvalue_reference_t<Container_noref>;
-  using Container_ref_const =
-      typename std::add_lvalue_reference_t<Container_noref const>;
+  using Container_ref_const = typename std::add_lvalue_reference_t<Container_noref const>;
   using iterator = typename Container_noref::iterator;
   using const_iterator = typename Container_noref::const_iterator;
 
   /* member variables */
   Container data{};
-  vector<size_t> shape_{};
+  Shape<T> shape_{};
+  Strides strides_{};
 
   /* helper functions */
   bool out_of_bound(int i);
@@ -51,25 +54,25 @@ class Storage {
  public:
   /* constructors */
   Storage() = default;
+  explicit Storage(size_t capacity);
   Storage(initializer_list<T> l);
+
+  /* copy and move constructors*/
   Storage(Storage<T, Container_noref>& other);
   Storage(Storage<T, Container_ref>& other);
   Storage(Storage<T, Container_noref>&& other);
   Storage(Storage<T, Container_ref>&& other);
   Storage(Container_ref c);
-  explicit Storage(size_t capacity);
 
   /* copy and move assignments */
-  Storage<T, Container>& operator=(Storage<T, Container> const& other) =
-      default;
-  Storage<T, Container>& operator=(Storage<T, Container> const&& other) =
-      default;
+  Storage<T, Container>& operator=(Storage<T, Container> const& other) = default;
+  Storage<T, Container>& operator=(Storage<T, Container>&& other) = default;
 
   /* getters */
   Container_ref getData() { return data; }
   Container_ref_const getData() const { return data; }
-  vector<size_t>& shape() { return shape_; }
-  vector<size_t> const& shape() const { return shape_; }
+  Shape<T> const& shape() const { return shape_; }
+  Strides const& strides() const { return strides_; }
 
   /* object state inspectors */
   constexpr size_t size() const noexcept { return data.size(); }
@@ -92,38 +95,43 @@ class Storage {
 /* constructors */
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(initializer_list<T> l)
-    : data(l), shape_({capacity()}) {}
-
-template <typename T, typename Container>
-Storage<T, Container>::Storage(size_t capacity) : shape_({capacity}) {
+inline Storage<T, Container>::Storage(size_t capacity) : shape_(capacity), strides_(shape_) {
   data.reserve(capacity);
 }
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(Storage<T, Container_noref>& other)
-    : data(other.getData()), shape_(other.shape()) {}
+inline Storage<T, Container>::Storage(initializer_list<T> l)
+    : data(l), shape_(l), strides_(shape_) {}
+
+/* copy and move constructors*/
+template <typename T, typename Container>
+inline Storage<T, Container>::Storage(Storage<T, Container_noref>& other)
+    : data(other.getData()), shape_(other.shape()), strides_(other.strides()) {}
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(Storage<T, Container_ref>& other)
-    : data(other.getData()), shape_(other.shape()) {}
+inline Storage<T, Container>::Storage(Storage<T, Container_ref>& other)
+    : data(other.getData()), shape_(other.shape()), strides_(other.strides()) {}
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(Storage<T, Container_noref>&& other)
-    : data(std::move(other.getData())), shape_(std::move(other.shape())) {}
+inline Storage<T, Container>::Storage(Storage<T, Container_noref>&& other)
+    : data(std::move(other.getData())),
+      shape_(std::move(other.shape())),
+      strides_(std::move(other.strides())) {}
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(Storage<T, Container_ref>&& other)
-    : data(std::move(other.getData())), shape_(std::move(other.shape())) {}
+inline Storage<T, Container>::Storage(Storage<T, Container_ref>&& other)
+    : data(std::move(other.getData())),
+      shape_(std::move(other.shape())),
+      strides_(std::move(other.strides())) {}
 
 template <typename T, typename Container>
-Storage<T, Container>::Storage(Container_ref c)
-    : data(c), shape_({capacity()}) {}
+inline Storage<T, Container>::Storage(Container_ref c)
+    : data(c), shape_(capacity()), strides_(shape_) {}
 
 /* helper functions */
 
 template <typename T, typename Container>
-bool Storage<T, Container>::out_of_bound(int i) {
+inline bool Storage<T, Container>::out_of_bound(int i) {
   if (i < 0) {
     return static_cast<size_t>(-i) >= size();
   }
@@ -131,34 +139,31 @@ bool Storage<T, Container>::out_of_bound(int i) {
 }
 
 template <typename T, typename Container>
-std::remove_pointer_t<T>& Storage<T, Container>::getElement(
-    int i, vector<std::remove_pointer_t<T>>& vec) {
+inline auto Storage<T, Container>::getElement(int i, vector<base_type>& vec) -> base_type& {
   return vec[i];
 }
 
 template <typename T, typename Container>
-std::remove_pointer_t<T>& Storage<T, Container>::getElement(
-    int i, vector<std::add_pointer_t<std::remove_pointer_t<T>>>& vec) {
+inline auto Storage<T, Container>::getElement(int i, vector<pointer_type>& vec) -> base_type& {
   return *vec[i];
 }
 
 template <typename T, typename Container>
-std::remove_pointer_t<T> const& Storage<T, Container>::getElement(
-    int i, vector<std::remove_pointer_t<T>> const& vec) const {
+inline auto Storage<T, Container>::getElement(int i, vector<base_type> const& vec) const
+    -> base_type const& {
   return vec[i];
 }
 
 template <typename T, typename Container>
-std::remove_pointer_t<T> const& Storage<T, Container>::getElement(
-    int i,
-    vector<std::add_pointer_t<std::remove_pointer_t<T>>> const& vec) const {
+inline auto Storage<T, Container>::getElement(int i, vector<pointer_type> const& vec) const
+    -> base_type const& {
   return *vec[i];
 }
 
 /* indexing */
 
 template <typename T, typename Container>
-std::remove_pointer_t<T> const& Storage<T, Container>::operator[](int i) const {
+inline auto Storage<T, Container>::operator[](int i) const -> base_type const& {
   if (i < 0) {
     i = static_cast<int>(size()) + i;
   }
@@ -166,12 +171,13 @@ std::remove_pointer_t<T> const& Storage<T, Container>::operator[](int i) const {
 }
 
 template <typename T, typename Container>
-std::remove_pointer_t<T>& Storage<T, Container>::operator[](int i) {
+inline auto Storage<T, Container>::operator[](int i) -> base_type& {
   if (i < 0) {
     i = static_cast<int>(size()) + i;
   }
   return getElement(i, data);
 }
+
 }  // namespace npp
 
 #endif /* storage_hpp */
