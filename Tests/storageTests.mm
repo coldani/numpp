@@ -8,6 +8,7 @@
 #import <XCTest/XCTest.h>
 #import <utility>
 #import "storage.hpp"
+#import "shape.hpp"
 
 
 /* ******************************************************/
@@ -266,6 +267,30 @@
     XCTAssertEqual(vec[1], 200);
 }
 
+
+- (void)testVectorReferenceWithShape {
+    std::vector<int> vec {1, 2, 3, 4};
+    npp::Shape s(std::vector<size_t>({2, 2}));
+    npp::Storage<int, std::vector<int>&> storage{vec, s};
+    XCTAssertEqual(storage.size(), 4);
+    XCTAssertEqual(storage.shape().ndims(), 2);
+    XCTAssertEqual(storage.shape()[0], 2);
+    XCTAssertEqual(storage.shape()[1], 2);
+    
+    for (auto i = 0u; i < storage.size(); i++) {
+        XCTAssertEqual(storage[i], vec[i]);
+    }
+    
+    // Changing data on underlying vector changes data on storage and vice versa
+    storage[0] = 100;
+    XCTAssertEqual(storage[0], 100);
+    XCTAssertEqual(vec[0], 100);
+    
+    vec[1] = 200;
+    XCTAssertEqual(storage[1], 200);
+    XCTAssertEqual(vec[1], 200);
+}
+
 - (void)testVectorReferenceChangeVec {
     std::vector<int> vec {1, 2, 3};
     std::vector<int> otherVec {-1, -2, -3};
@@ -445,6 +470,360 @@
     
     otherStorage[1] = 200;
     XCTAssertEqual(storage[1], 200);
+}
+
+@end
+
+
+/* ************************************/
+/* TESTS FOR MULTIDIMENTIONAL STORAGE */
+/* ************************************/
+
+@interface TestsMultidimensionalStorage : XCTestCase
+
+@end
+
+@implementation TestsMultidimensionalStorage
+
+
+- (void)test2DStorage {
+    npp::Storage<int> s {{1, 2, 3}, {4, 5, 6}};
+    XCTAssertEqual(s.size(), 6);
+    XCTAssertEqual(s.capacity(), 6);
+    
+    XCTAssertEqual(s.shape().ndims(), 2);
+    XCTAssertEqual(s.shape()[0], 2);
+    XCTAssertEqual(s.shape()[1], 3);
+    
+    XCTAssertEqual(s.strides().ndims(), 2);
+    XCTAssertEqual(s.strides()[0], 3);
+    XCTAssertEqual(s.strides()[1], 1);
+    
+    int v = 1;
+    for (auto e: s) {
+        XCTAssertEqual(e, v++);
+    }
+}
+
+- (void)test3DStorage {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    XCTAssertEqual(s.size(), 24);
+    XCTAssertEqual(s.capacity(), 24);
+    
+    XCTAssertEqual(s.shape().ndims(), 3);
+    XCTAssertEqual(s.shape()[0], 2);
+    XCTAssertEqual(s.shape()[1], 3);
+    XCTAssertEqual(s.shape()[2], 4);
+    
+    XCTAssertEqual(s.strides().ndims(), 3);
+    XCTAssertEqual(s.strides()[0], 12);
+    XCTAssertEqual(s.strides()[1], 4);
+    XCTAssertEqual(s.strides()[2], 1);
+    
+    int v = 1;
+    for (auto e: s) {
+        XCTAssertEqual(e, v++);
+    }
+}
+
+- (void)testWrongShape {
+    try {
+        npp::Storage<int> s{
+            {{1,  2,  3,  4},  {5,  6,  7,  8}},
+            {{13, 14, 15, 16}, {17, 18}}
+        };
+        XCTAssertTrue(false);
+    } catch (npp::ShapeDeductionError e) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+}
+
+- (void)test1DStorageIndex {
+    npp::Storage<int> s {1, 2, 3};
+    XCTAssertEqual(s(0), 1);
+    XCTAssertEqual(s(1), 2);
+    XCTAssertEqual(s(2), 3);
+}
+
+- (void)test1DHorizIndex {
+    npp::Storage<int> s {{1, 2, 3}};
+    XCTAssertEqual(s(0,0), 1);
+    XCTAssertEqual(s(0,1), 2);
+    XCTAssertEqual(s(0,2), 3);
+}
+
+- (void)test2DStorageIndex {
+    npp::Storage<int> s {{1, 2, 3}, {4, 5, 6}};
+    XCTAssertEqual(s(0,0), 1);
+    XCTAssertEqual(s(0,1), 2);
+    XCTAssertEqual(s(0,2), 3);
+    XCTAssertEqual(s(1,0), 4);
+    XCTAssertEqual(s(1,1), 5);
+    XCTAssertEqual(s(1,2), 6);
+}
+
+- (void)test3DStorageIndex {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    XCTAssertEqual(s(0,0,0), 1);
+    XCTAssertEqual(s(0,0,1), 2);
+    XCTAssertEqual(s(0,0,2), 3);
+    XCTAssertEqual(s(0,0,3), 4);
+    XCTAssertEqual(s(0,1,0), 5);
+    XCTAssertEqual(s(0,1,3), 8);
+    XCTAssertEqual(s(0,2,1), 10);
+    XCTAssertEqual(s(1,0,0), 13);
+    XCTAssertEqual(s(1,0,2), 15);
+    XCTAssertEqual(s(1,1,2), 19);
+    XCTAssertEqual(s(1,2,3), 24);
+}
+
+- (void)testWrongIndex {
+    npp::Storage<int> s {{1, 2, 3}, {4, 5, 6}};
+    try {
+        s(0);
+        XCTAssertTrue(false);
+    } catch (npp::IndexError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    try {
+        s(0, 1, 2);
+        XCTAssertTrue(false);
+    } catch (npp::IndexError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+}
+
+- (void)testNegative3DIndices {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    XCTAssertEqual(s(-1, -1, -1), 24);
+    XCTAssertEqual(s(0, 0, -4), 1);
+    XCTAssertEqual(s(-2, -1, -3), 10);
+    XCTAssertEqual(s(-1, 1, 0), 17);
+    XCTAssertEqual(s(-1, -3, 2), 15);
+    XCTAssertEqual(s(-2, 1, -3), 6);
+}
+
+- (void)testAssignValuesVia3DIndices {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    s(0, 0, 0) = 100;
+    s(-1, -2, 3) = 200;
+    
+    XCTAssertEqual(s(0, 0, 0), 100);
+    XCTAssertEqual(s(-2, -3, -4), 100);
+    XCTAssertEqual(s[0], 100);
+    
+    XCTAssertEqual(s(-1, -2, 3), 200);
+    XCTAssertEqual(s(1, 1, -1), 200);
+    XCTAssertEqual(s[19], 200);
+}
+
+
+@end
+
+
+
+/* ***************************/
+/* TESTS FOR STORAGE RESHAPE */
+/* ***************************/
+
+@interface TestsStorageReshape : XCTestCase
+
+@end
+
+@implementation TestsStorageReshape
+
+- (void)testCanReshapeFrom1Dto2D {
+    npp::Storage<int> s{1, 2, 3, 4};
+    npp::Storage<int> new_s = s.reshape({2, 2});
+    
+    XCTAssertEqual(s.shape().ndims(), 1);
+    XCTAssertEqual(s.shape()[0], 4);
+    XCTAssertEqual(new_s.shape().ndims(), 2);
+    XCTAssertEqual(new_s.shape()[0], 2);
+    XCTAssertEqual(new_s.shape()[1], 2);
+    
+    XCTAssertEqual(s(0), new_s(0, 0));
+    XCTAssertEqual(s(1), new_s(0, 1));
+    XCTAssertEqual(s(2), new_s(1, 0));
+    XCTAssertEqual(s(3), new_s(1, 1));
+}
+
+- (void)testCanReshape1DHorizTo1DVert {
+    npp::Storage<int> s{{1, 2, 3, 4}};
+    npp::Storage<int> new_s = s.reshape({4, 1});
+    
+    XCTAssertEqual(s.shape().ndims(), 2);
+    XCTAssertEqual(s.shape()[0], 1);
+    XCTAssertEqual(s.shape()[1], 4);
+    XCTAssertEqual(new_s.shape().ndims(), 2);
+    XCTAssertEqual(new_s.shape()[0], 4);
+    XCTAssertEqual(new_s.shape()[1], 1);
+    
+    XCTAssertEqual(s(0, 0), new_s(0, 0));
+    XCTAssertEqual(s(0, 1), new_s(1, 0));
+    XCTAssertEqual(s(0, 2), new_s(2, 0));
+    XCTAssertEqual(s(0, 3), new_s(3, 0));
+}
+
+- (void)testCanReshape2Dto2D {
+    npp::Storage<int> s{{1, 2, 3, 4}, {5, 6, 7, 8}};
+    npp::Storage<int> new_s = s.reshape({4, 2});
+    
+    XCTAssertEqual(s.shape().ndims(), 2);
+    XCTAssertEqual(s.shape()[0], 2);
+    XCTAssertEqual(s.shape()[1], 4);
+    XCTAssertEqual(new_s.shape().ndims(), 2);
+    XCTAssertEqual(new_s.shape()[0], 4);
+    XCTAssertEqual(new_s.shape()[1], 2);
+    
+    XCTAssertEqual(s(0, 0), new_s(0, 0));
+    XCTAssertEqual(s(0, 1), new_s(0, 1));
+    XCTAssertEqual(s(0, 2), new_s(1, 0));
+    XCTAssertEqual(s(1, 2), new_s(3, 0));
+    XCTAssertEqual(s(1, -1), new_s(3, 1));
+}
+
+- (void)testCanReshape2Dto1D {
+    npp::Storage<int> s{{1, 2, 3, 4}, {5, 6, 7, 8}};
+    npp::Storage<int> new_s = s.reshape({8});
+    
+    XCTAssertEqual(s.shape().ndims(), 2);
+    XCTAssertEqual(s.shape()[0], 2);
+    XCTAssertEqual(s.shape()[1], 4);
+    XCTAssertEqual(new_s.shape().ndims(), 1);
+    XCTAssertEqual(new_s.shape()[0], 8);
+    
+    XCTAssertEqual(s(0, 0), new_s(0));
+    XCTAssertEqual(s(0, 1), new_s(1));
+    XCTAssertEqual(s(0, 2), new_s(2));
+    XCTAssertEqual(s(1, 2), new_s(6));
+    XCTAssertEqual(s(1, -1), new_s(7));
+}
+
+- (void)testFlatten {
+    npp::Storage<int> s{{1, 2, 3, 4}, {5, 6, 7, 8}};
+    npp::Storage<int> new_s = s.flatten();
+    
+    XCTAssertEqual(s.shape().ndims(), 2);
+    XCTAssertEqual(s.shape()[0], 2);
+    XCTAssertEqual(s.shape()[1], 4);
+    XCTAssertEqual(new_s.shape().ndims(), 1);
+    XCTAssertEqual(new_s.shape()[0], 8);
+    
+    XCTAssertEqual(s(0, 0), new_s(0));
+    XCTAssertEqual(s(0, 1), new_s(1));
+    XCTAssertEqual(s(0, 2), new_s(2));
+    XCTAssertEqual(s(1, 2), new_s(6));
+    XCTAssertEqual(s(1, -1), new_s(7));
+}
+
+- (void)testWrongShape {
+    npp::Storage<int> s{{1, 2, 3, 4}, {5, 6, 7, 8}};
+    
+    try {
+    npp::Storage<int> new_s = s.reshape({4, 3});
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+}
+
+- (void)testChangingValuesWorks {
+    npp::Storage<int> s{1, 2, 3, 4};
+    npp::Storage<int, std::vector<int>&> new_s = s.reshape({2, 2});
+    
+    s(0) = 100;
+    XCTAssertEqual(new_s(0, 0), 100);
+    
+    new_s(1, 0) = 200;
+    XCTAssertEqual(s(2), 200);
+    
+    new_s.flatten()(0) = 1000;
+    XCTAssertEqual(s(0), 1000);
+    XCTAssertEqual(new_s(0,0), 1000);
+    
+}
+
+- (void)testResize {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    
+    
+    s.resize({3, 2, 4});
+    XCTAssertEqual(s(0,0,0), 1);
+    XCTAssertEqual(s(2,1,3), 24);
+    
+    XCTAssertEqual(s.size(), 24);
+    XCTAssertEqual(s.capacity(), 24);
+    
+    XCTAssertEqual(s.shape().ndims(), 3);
+    XCTAssertEqual(s.shape()[0], 3);
+    XCTAssertEqual(s.shape()[1], 2);
+    XCTAssertEqual(s.shape()[2], 4);
+    
+    XCTAssertEqual(s.strides().ndims(), 3);
+    XCTAssertEqual(s.strides()[0], 8);
+    XCTAssertEqual(s.strides()[1], 4);
+    XCTAssertEqual(s.strides()[2], 1);
+}
+
+- (void)testResizeflat {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    
+    
+    s.resize_flat();
+    XCTAssertEqual(s(0), 1);
+    XCTAssertEqual(s(-1), 24);
+    
+    XCTAssertEqual(s.size(), 24);
+    XCTAssertEqual(s.capacity(), 24);
+    
+    XCTAssertEqual(s.shape().ndims(), 1);
+    XCTAssertEqual(s.shape()[0], 24);;
+    
+    XCTAssertEqual(s.strides().ndims(), 1);
+    XCTAssertEqual(s.strides()[0], 1);
+}
+
+- (void)testResizeWrongDimensions {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    try {
+        s.resize({3, 3, 3});
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
 }
 
 @end

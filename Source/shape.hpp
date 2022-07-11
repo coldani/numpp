@@ -71,11 +71,16 @@ class Shape {
   Shape<T>& operator=(vector<size_t> const& otherShape);
   Shape<T>& operator=(vector<size_t>&& otherShape);
 
-  /* other functions */
+  /* getters */
   vector<size_t> const& getShape() const { return shape; }
   DimensionsChecker<T> const& getChecker() const { return checker; }
+
+  /* other functions */
   size_t ndims() const { return shape.size(); }
   size_t operator[](size_t i) const { return shape[i]; }
+  size_t calc_size() const;
+  template <typename otherT>
+  bool is_equivalent(Shape<otherT> const& other) const;
 };
 
 /***********************************
@@ -84,10 +89,6 @@ class Shape {
 
 class Strides {
   vector<size_t> strides{};
-
-  /* helper function */
-  template <typename T>
-  void stridesFromShape(Shape<T> const& shape);
 
  public:
   /* constructors */
@@ -106,6 +107,9 @@ class Strides {
   /* other functions */
   size_t ndims() const { return strides.size(); }
   size_t operator[](size_t i) const { return strides[i]; }
+
+  template <typename T>
+  void fromShape(Shape<T> const& shape);
 };
 
 /***********************************
@@ -184,6 +188,26 @@ inline void Shape<T>::fillShape(nested_init_list_t<T, I> l) {
   fillShape<I - 1>(*l.begin());
 }
 
+/* other functions */
+template <typename T>
+inline size_t Shape<T>::calc_size() const {
+  if (ndims() == 0) {
+    return 0;
+  }
+  size_t size = 1;
+  for (auto dim : shape) {
+    size *= dim;
+  }
+
+  return size;
+}
+
+template <typename T>
+template <typename otherT>
+inline bool Shape<T>::is_equivalent(Shape<otherT> const& other) const {
+  return calc_size() == other.calc_size();
+}
+
 /*************************************
  * STRIDES IMPLEMENTATION
  **************************************/
@@ -191,7 +215,7 @@ inline void Shape<T>::fillShape(nested_init_list_t<T, I> l) {
 /* constructors */
 template <typename T>
 inline Strides::Strides(Shape<T> shape) {
-  stridesFromShape<T>(shape);
+  fromShape<T>(shape);
 }
 
 /* copy and move assignments */
@@ -206,7 +230,7 @@ inline Strides& Strides::operator=(Strides&& other) {
 
 /* helper function */
 template <typename T>
-void Strides::stridesFromShape(Shape<T> const& shape) {
+void Strides::fromShape(Shape<T> const& shape) {
   size_t ndims = shape.ndims();
   vector<size_t> vec(ndims);
 
