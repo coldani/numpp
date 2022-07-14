@@ -1062,6 +1062,7 @@
     XCTAssertEqual(s(0), 100);
     XCTAssertEqual(view(0), 100);
 }
+
 - (void)testViewException {
     npp::Storage<int> s{1, 2, 3};
     try {
@@ -1072,6 +1073,71 @@
     } catch (...) {
         XCTAssertTrue(false);
     }
+}
+
+- (void)testFullView {
+    npp::Storage<int> s{{1, 2, 3}, {4, 5, 6}};
+    auto v = s.view();
+    
+    XCTAssertEqual(v.shape().ndims(), 2);
+    XCTAssertEqual(v.shape()[0], 2);
+    XCTAssertEqual(v.shape()[1], 3);
+    XCTAssertEqual(v(0,0), 1);
+    XCTAssertEqual(v(0,1), 2);
+    XCTAssertEqual(v(0,2), 3);
+    XCTAssertEqual(v(1,0), 4);
+    XCTAssertEqual(v(1,1), 5);
+    XCTAssertEqual(v(1,2), 6);
+    
+    s(0,0) = 100;
+    XCTAssertEqual(s(0, 0), 100);
+    XCTAssertEqual(v(0, 0), 100);
+    
+    v(0, 1) = 200;
+    XCTAssertEqual(s(0, 1), 200);
+    XCTAssertEqual(v(0, 1), 200);
+}
+
+
+- (void)testFullCopy {
+    npp::Storage<int> s{{1, 2, 3}, {4, 5, 6}};
+    auto v = s.view();
+    auto cs = s.copy();
+    auto cv = v.copy();
+    
+    XCTAssertEqual(cv.shape().ndims(), 2);
+    XCTAssertEqual(cv.shape()[0], 2);
+    XCTAssertEqual(cv.shape()[1], 3);
+    XCTAssertEqual(cv(0,0), 1);
+    XCTAssertEqual(cv(0,1), 2);
+    XCTAssertEqual(cv(0,2), 3);
+    XCTAssertEqual(cv(1,0), 4);
+    XCTAssertEqual(cv(1,1), 5);
+    XCTAssertEqual(cv(1,2), 6);
+    XCTAssertEqual(cs.shape().ndims(), cv.shape().ndims());
+    XCTAssertEqual(cs.shape()[0], cv.shape()[0]);
+    XCTAssertEqual(cs.shape()[1], cv.shape()[1]);
+    XCTAssertEqual(cs(0,0), cv(0,0));
+    XCTAssertEqual(cs(0,1), cs(0,1));
+    XCTAssertEqual(cs(0,2), cs(0,2));
+    XCTAssertEqual(cs(1,0), cs(1,0));
+    XCTAssertEqual(cs(1,1), cs(1,1));
+    XCTAssertEqual(cs(1,2), cs(1,2));
+    
+    s(0,0) = 100;
+    XCTAssertEqual(s(0, 0), 100);
+    XCTAssertEqual(cs(0, 0), 1);
+    XCTAssertEqual(cv(0, 0), 1);
+    
+    cv(0, 1) = 200;
+    XCTAssertEqual(s(0, 1), 2);
+    XCTAssertEqual(cv(0, 1), 200);
+    XCTAssertEqual(cs(0, 1), 2);
+    
+    cs(0, 2) = 300;
+    XCTAssertEqual(s(0, 2), 3);
+    XCTAssertEqual(cv(0, 2), 3);
+    XCTAssertEqual(cs(0, 2), 300);
 }
 
 @end

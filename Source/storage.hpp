@@ -109,7 +109,7 @@ class Storage {
   constexpr size_t size() const noexcept { return data.size(); }
   constexpr size_t capacity() const noexcept { return data.capacity(); }
 
-  /* indexing and view */
+  /* indexing */
   base_type const& operator[](int i) const;
   base_type& operator[](int i);
 
@@ -118,8 +118,11 @@ class Storage {
   template <class Arg, class... Args>
   base_type& operator()(Arg arg, Args... args);
 
+  /* view & copy */
   template <class Arg, class... Args>
   Storage<pointer_type, vector<pointer_type>> view(Arg arg, Args... args);
+  Storage<T, Container_ref> view();
+  Storage<base_type, vector<base_type>> copy();
 
   /* iterators */
   iterator begin() { return data.begin(); }
@@ -271,7 +274,6 @@ inline size_t Storage<T, Container>::convertIndexIfNeg(int index, size_t ceiling
   return static_cast<size_t>(index);
 }
 
-
 template <typename T, typename Container>
 template <size_t dim, class Arg, class... Args>
 inline size_t Storage<T, Container>::computeFlattenedIndex(Arg arg, Args... args) const {
@@ -329,7 +331,7 @@ template <typename T, typename Container>
 template <size_t dim>
 inline void Storage<T, Container>::makeSlices(vector<vector<int>>& slices) const {}
 
-/* indexing and view */
+/* indexing */
 
 template <typename T, typename Container>
 inline auto Storage<T, Container>::operator[](int i) const -> base_type const& {
@@ -369,6 +371,8 @@ inline auto Storage<T, Container>::operator()(Arg arg, Args... args) -> base_typ
   return getElement(index, data);
 }
 
+/* view & copy*/
+
 template <typename T, typename Container>
 template <class Arg, class... Args>
 inline auto Storage<T, Container>::view(Arg arg, Args... args)
@@ -403,6 +407,22 @@ inline auto Storage<T, Container>::view(Arg arg, Args... args)
   // create view and return it
   Shape<pointer_type> s(std::move(view_shape));
   return Storage<pointer_type, vector<pointer_type>>(view_storage, s);
+}
+
+template <typename T, typename Container>
+inline auto Storage<T, Container>::view() -> Storage<T, Container_ref> {
+  Container_ref c(data);
+  return Storage<T, Container_ref>(c, shape_);
+}
+
+template <typename T, typename Container>
+inline auto Storage<T, Container>::copy() -> Storage<base_type, vector<base_type>> {
+  vector<base_type> c;
+  c.reserve(data.size());
+  for (size_t i = 0; i < data.size(); i++) {
+    c.push_back(getElement(i, data));
+  }
+  return Storage<base_type, vector<base_type>>(c, shape_);
 }
 
 /* reshape */
