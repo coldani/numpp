@@ -16,11 +16,11 @@
 /* ******************************************************/
 
 
-@interface storageTests : XCTestCase
+@interface StorageTests : XCTestCase
 
 @end
 
-@implementation storageTests
+@implementation StorageTests
 
 // Constructors and copy/move assignment
 - (void)testEmptyInitialize {
@@ -178,19 +178,19 @@
 }
 
 - (void)testConstOperatorSelection {
-    npp::Storage<int> storage {-1, -2, -3};
+    npp::Storage<int> const storage {-1, -2, -3};
     
-    int const el0 = storage[0];
-    int const el1 = storage[1];
-    int const el2 = storage[2];
+    int el0 = storage[0];
+    int el1 = storage[1];
+    int el2 = storage[2];
     
     XCTAssertEqual(el0, -1);
     XCTAssertEqual(el1, -2);
     XCTAssertEqual(el2, -3);
 
-    int const elmin1 = storage[-1];
-    int const elmin2 = storage[-2];
-    int const elmin3 = storage[-3];
+    int elmin1 = storage[-1];
+    int elmin2 = storage[-2];
+    int elmin3 = storage[-3];
     
     XCTAssertEqual(elmin1, -3);
     XCTAssertEqual(elmin2, -2);
@@ -240,11 +240,11 @@
 /* TESTS FOR INSTANCES OF REFERENCE STORAGE */
 /* ******************************************/
 
-@interface TestsReferenceStorage : XCTestCase
+@interface ReferenceStorageTests : XCTestCase
 
 @end
 
-@implementation TestsReferenceStorage
+@implementation ReferenceStorageTests
 
     /* Vector Reference */
 
@@ -350,6 +350,22 @@
     int i = 1;
     int ii = 2;
     npp::Storage<int*> storage {&i, &ii};
+    XCTAssertEqual(storage[0], i);
+    XCTAssertEqual(storage[1], ii);
+    
+    // Changing underlying elements in vector changes data in storage
+    i = 100;
+    XCTAssertEqual(storage[0], 100);
+    
+    storage[1] = 200;
+    XCTAssertEqual(ii, 200);
+}
+
+
+- (void)testVectorToPointers2D { // just to test fillStorage(pointer_type const& element)
+    int i = 1;
+    int ii = 2;
+    npp::Storage<int*> storage {{&i, &ii}};
     XCTAssertEqual(storage[0], i);
     XCTAssertEqual(storage[1], ii);
     
@@ -479,12 +495,27 @@
 /* TESTS FOR MULTIDIMENTIONAL STORAGE */
 /* ************************************/
 
-@interface TestsMultidimensionalStorage : XCTestCase
+@interface MultidimensionalStorageTests : XCTestCase
 
 @end
 
-@implementation TestsMultidimensionalStorage
+@implementation MultidimensionalStorageTests
 
+- (void)testEmptyMultiDimStorage {
+    npp::Storage<int> s {npp::Shape(4,3,2)};
+    XCTAssertEqual(s.size(), 0);
+    XCTAssertEqual(s.capacity(), 24);
+    
+    XCTAssertEqual(s.shape().ndims(), 3);
+    XCTAssertEqual(s.shape()[0], 4);
+    XCTAssertEqual(s.shape()[1], 3);
+    XCTAssertEqual(s.shape()[2], 2);
+    
+    XCTAssertEqual(s.strides().ndims(), 3);
+    XCTAssertEqual(s.strides()[0], 6);
+    XCTAssertEqual(s.strides()[1], 2);
+    XCTAssertEqual(s.strides()[2], 1);
+}
 
 - (void)test2DStorage {
     npp::Storage<int> s {{1, 2, 3}, {4, 5, 6}};
@@ -583,9 +614,30 @@
     XCTAssertEqual(s(1,0,2), 15);
     XCTAssertEqual(s(1,1,2), 19);
     XCTAssertEqual(s(1,2,3), 24);
+
+}
+
+- (void)test3DConstStorageIndex {
+    npp::Storage<int> const s{
+        {{1,  2,  3,  4},  {5,  6,  7,  8},  {9,  10, 11, 12}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
+    };
+    XCTAssertEqual(s(0,0,0), 1);
+    XCTAssertEqual(s(0,0,1), 2);
+    XCTAssertEqual(s(0,0,2), 3);
+    XCTAssertEqual(s(0,0,3), 4);
+    XCTAssertEqual(s(0,1,0), 5);
+    XCTAssertEqual(s(0,1,3), 8);
+    XCTAssertEqual(s(0,2,1), 10);
+    XCTAssertEqual(s(1,0,0), 13);
+    XCTAssertEqual(s(1,0,2), 15);
+    XCTAssertEqual(s(1,1,2), 19);
+    XCTAssertEqual(s(1,2,3), 24);
+
 }
 
 - (void)testWrongIndex {
+    // non-const
     npp::Storage<int> s {{1, 2, 3}, {4, 5, 6}};
     try {
         s(0);
@@ -598,6 +650,26 @@
     
     try {
         s(0, 1, 2);
+        XCTAssertTrue(false);
+    } catch (npp::IndexError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    // const
+    npp::Storage<int> const sconst {{1, 2, 3}, {4, 5, 6}};
+    try {
+        sconst(0);
+        XCTAssertTrue(false);
+    } catch (npp::IndexError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    try {
+        sconst(0, 1, 2);
         XCTAssertTrue(false);
     } catch (npp::IndexError) {
         XCTAssertTrue(true);
@@ -645,11 +717,11 @@
 /* TESTS FOR STORAGE RESHAPE */
 /* ***************************/
 
-@interface TestsStorageReshape : XCTestCase
+@interface StorageReshapeTests : XCTestCase
 
 @end
 
-@implementation TestsStorageReshape
+@implementation StorageReshapeTests
 
 - (void)testCanReshapeFrom1Dto2D {
     npp::Storage<int> s{1, 2, 3, 4};
@@ -818,6 +890,182 @@
     };
     try {
         s.resize({3, 3, 3});
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+}
+
+@end
+
+
+/* ***************************/
+/* TESTS FOR STORAGE VIEW    */
+/* ***************************/
+
+@interface StorageViewTests : XCTestCase
+
+@end
+
+@implementation StorageViewTests
+
+- (void)testMakeScalarViewOf1D {
+    npp::Storage<int> s{1,  2,  3,  4};
+    auto view = s.view(0);
+    
+    XCTAssertEqual(view.size(), 1);
+    XCTAssertEqual(view[0],1);
+    
+    s[0] = 100;
+    XCTAssertEqual(s[0], 100);
+    XCTAssertEqual(view[0], 100);
+    
+    view[0] = 200;
+    XCTAssertEqual(s[0], 200);
+    XCTAssertEqual(view[0], 200);
+}
+
+- (void)testMakeSliceViewOf1D {
+    npp::Storage<int> s{1,  2,  3,  4};
+    auto view = s.view(npp::slice{0, 2});
+    
+    XCTAssertEqual(view.size(), 2);
+    XCTAssertEqual(view[0],1);
+    XCTAssertEqual(view[1],3);
+    
+    s[0] = 100;
+    XCTAssertEqual(s[0], 100);
+    XCTAssertEqual(view[0], 100);
+    
+    view[1] = 200;
+    XCTAssertEqual(s[2], 200);
+    XCTAssertEqual(view[1], 200);
+}
+
+- (void)testMakeViewSlice {
+    npp::Storage<int> s{{1,  2,  3,  4}, {5,  6,  7,  8}};
+    auto view = s.view(npp::slice{-1, -2}, npp::slice{0, 2});
+    
+    XCTAssertEqual(view.size(), 4);
+    XCTAssertEqual(view.shape().ndims(), 2);
+    XCTAssertEqual(view.shape()[0], 2);
+    XCTAssertEqual(view.shape()[1], 2);
+
+    XCTAssertEqual(view(0, 0), 5);
+    XCTAssertEqual(view(0, 1), 7);
+    XCTAssertEqual(view(1, 0), 1);
+    XCTAssertEqual(view(1, 1), 3);
+    
+    s(0,0) = 100;
+    XCTAssertEqual(s(0,0), 100);
+    XCTAssertEqual(view(1, 0), 100);
+    
+    view(-1, -1) = 200;
+    XCTAssertEqual(s(0, 2), 200);
+    XCTAssertEqual(view(-1,-1), 200);
+}
+
+- (void)testMakeViewRange {
+    npp::Storage<int> s{{1,  2,  3,  4}, {5,  6,  7,  8}};
+    auto view = s.view(npp::range(0,-1), npp::range(0, 2));
+    
+    XCTAssertEqual(view.size(), 6);
+    XCTAssertEqual(view.shape().ndims(), 2);
+    XCTAssertEqual(view.shape()[0], 2);
+    XCTAssertEqual(view.shape()[1], 3);
+
+    XCTAssertEqual(view(0, 0), 1);
+    XCTAssertEqual(view(0, 1), 2);
+    XCTAssertEqual(view(0, 2), 3);
+    XCTAssertEqual(view(1, 0), 5);
+    XCTAssertEqual(view(1, 1), 6);
+    XCTAssertEqual(view(1, 2), 7);
+    
+    s(1,1) = 600;
+    XCTAssertEqual(s(1, 1), 600);
+    XCTAssertEqual(view(1, 1), 600);
+    
+    view(-1, -1) = 700;
+    XCTAssertEqual(s(1, 2), 700);
+    XCTAssertEqual(view(-1, -1), 700);
+}
+
+- (void)testMakeViewAll {
+    npp::Storage<int> s{{1,  2,  3,  4}, {5,  6,  7,  8}};
+    auto view = s.view(npp::all(), npp::all());
+    
+    XCTAssertEqual(view.size(), 8);
+    XCTAssertEqual(view.shape().ndims(), 2);
+    XCTAssertEqual(view.shape()[0], 2);
+    XCTAssertEqual(view.shape()[1], 4);
+
+    XCTAssertEqual(view(0, 0), 1);
+    XCTAssertEqual(view(0, 1), 2);
+    XCTAssertEqual(view(0, 2), 3);
+    XCTAssertEqual(view(0, 3), 4);
+    XCTAssertEqual(view(1, 0), 5);
+    XCTAssertEqual(view(1, 1), 6);
+    XCTAssertEqual(view(1, 2), 7);
+    XCTAssertEqual(view(1, 3), 8);
+    
+    s(1,1) = 600;
+    XCTAssertEqual(s(1, 1), 600);
+    XCTAssertEqual(view(1, 1), 600);
+    
+    view(-1, -1) = 800;
+    XCTAssertEqual(s(1, 3), 800);
+    XCTAssertEqual(view(1, 3), 800);
+}
+
+- (void)testMakeViewMix {
+    npp::Storage<int> s{
+        {{1,  2,  3,  4}, {5,  6,  7,  8}},
+        {{10, 20, 30, 40}, {50, 60, 70, 80}}
+    };
+    auto view = s.view(0, npp::all(), npp::slice{0, 1, -1});
+    
+    XCTAssertEqual(view.size(), 6);
+    XCTAssertEqual(view.shape().ndims(), 3);
+    XCTAssertEqual(view.shape()[0], 1);
+    XCTAssertEqual(view.shape()[1], 2);
+    XCTAssertEqual(view.shape()[2], 3);
+
+    XCTAssertEqual(view(0, 0, 0), 1);
+    XCTAssertEqual(view(0, 0, 1), 2);
+    XCTAssertEqual(view(0, 0, 2), 4);
+    XCTAssertEqual(view(0, 1, 0), 5);
+    XCTAssertEqual(view(0, 1, 1), 6);
+    XCTAssertEqual(view(0, 1, 2), 8);
+    
+    s(0, 1, 3) = 800;
+    XCTAssertEqual(s(0, 1, 3), 800);
+    XCTAssertEqual(view(0, 1, 2), 800);
+    
+    view(-1, -1, -1) = 800;
+    XCTAssertEqual(s(0, 1, -1), 800);
+    XCTAssertEqual(view(-1, -1, -1), 800);
+}
+
+- (void)testConstView {
+    npp::Storage<int> s{1, 2, 3};
+    auto const view = s.view(0);
+    
+    XCTAssertEqual(view.size(), 1);
+    XCTAssertEqual(view.shape().ndims(), 1);
+    XCTAssertEqual(view.shape()[0], 1);
+
+    XCTAssertEqual(view(0), 1);
+    
+    s(0) = 100;
+    XCTAssertEqual(s(0), 100);
+    XCTAssertEqual(view(0), 100);
+}
+- (void)testViewException {
+    npp::Storage<int> s{1, 2, 3};
+    try {
+        auto const view = s.view(1, 0);
         XCTAssertTrue(false);
     } catch (npp::DimensionsMismatchError) {
         XCTAssertTrue(true);

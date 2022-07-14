@@ -50,13 +50,14 @@ struct IndexError : public std::exception {
 };
 
 struct DimensionsMismatchError : public std::exception {
-  vector<size_t> const& first;
-  vector<size_t> const& second;
+  vector<size_t> const first;
+  vector<size_t> const second;
   std::string message;
 
- public:
   DimensionsMismatchError(vector<size_t> const& first, vector<size_t> const& second)
       : first(first), second(second), message(makeMessage()) {}
+  DimensionsMismatchError(size_t first, size_t second)
+      : first({first}), second({second}), message(makeMessage(first, second)) {}
 
   std::string makeMessage() {
     /* get first dims to stringstream*/
@@ -80,6 +81,30 @@ struct DimensionsMismatchError : public std::exception {
     /* concatenate everything */
     std::stringstream ss;
     ss << "Dimensions mismatch: " << firstss.str() << " is not compatible with " << secondss.str();
+    return ss.str();
+  }
+
+  std::string makeMessage(size_t first, size_t second) {
+    std::stringstream ss;
+    ss << "Dimensions mismatch: " << first << " dimensions vs " << second << " dimensions.";
+    return ss.str();
+  }
+
+  const char* what() const throw() { return message.c_str(); }
+};
+
+struct InvalidRange : public std::exception {
+  int const start;
+  int const end;
+  int const step;
+  std::string message;
+
+  InvalidRange(int start, int end, int step)
+      : start(start), end(end), step(step), message(makeMessage()) {}
+
+  std::string makeMessage() {
+    std::stringstream ss;
+    ss << "Range(" << start << ", " << end << ", " << step << ") is invalid.";
     return ss.str();
   }
   const char* what() const throw() { return message.c_str(); }

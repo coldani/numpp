@@ -34,6 +34,14 @@
     XCTAssertEqual(s.calc_size(), 10);
 }
 
+- (void)testShapeFromArgPack {
+    npp::Shape s(3,2,1);
+    XCTAssertEqual(s.ndims(), 3);
+    XCTAssertEqual(s[0], 3);
+    XCTAssertEqual(s[1], 2);
+    XCTAssertEqual(s[2], 1);
+}
+
 - (void)test1DShape {
     npp::Shape s{1., 2., 3., 4.};
     XCTAssertEqual(s.ndims(), 1);
@@ -68,7 +76,7 @@
     XCTAssertEqual(s[2], 4);
 }
 
-- (void)testFromVector {
+- (void)testShapeFromVector {
     std::vector<std::size_t> vec{3, 2};
     npp::Shape s(vec);
     
@@ -82,6 +90,13 @@
     XCTAssertEqual(s2.calc_size(), 12);
     XCTAssertEqual(s2[0], 3);
     XCTAssertEqual(s2[1], 4);
+    
+    npp::Shape s3;
+    s3 = vec;
+    XCTAssertEqual(s.ndims(), 2);
+    XCTAssertEqual(s.calc_size(), 6);
+    XCTAssertEqual(s[0], 3);
+    XCTAssertEqual(s[1], 2);
 }
 
 - (void)testCopyConstruct {

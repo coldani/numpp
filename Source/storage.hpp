@@ -45,7 +45,6 @@ class Storage {
   Strides strides_{};
 
   /* helper functions */
-  bool out_of_bound(int i);
   base_type& getElement(size_t i, vector<base_type>& vec);
   base_type& getElement(size_t i, vector<pointer_type>& vec);
   base_type const& getElement(size_t i, vector<base_type> const& vec) const;
@@ -56,15 +55,30 @@ class Storage {
   template <typename S>
   void fillStorage(std::initializer_list<S> l);
 
+  size_t convertIndexIfNeg(int index, size_t ceiling) const;
+
   template <size_t dim, class Arg, class... Args>
-  size_t getIndex(Arg arg, Args... args) const;
+  size_t computeFlattenedIndex(Arg arg, Args... args) const;
   template <size_t dim>
-  size_t getIndex() const;
+  size_t computeFlattenedIndex() const;
+  size_t computeFlattenedIndex(vector<int> idx) const;
+
+  vector<int> makeVecOfIndices(int index, size_t) const;
+  vector<int> makeVecOfIndices(slice& indices, size_t) const;
+  vector<int> makeVecOfIndices(range& indices, size_t dim) const;
+  vector<int> makeVecOfIndices(all& indices, size_t dim) const;
+
+  template <size_t dim, class Arg, class... Args>
+  void makeSlices(vector<vector<int>>& slices, Arg arg, Args... args) const;
+  template <size_t dim>
+  void makeSlices(vector<vector<int>>& slices) const;
 
  public:
   /* constructors */
   Storage() = default;
   explicit Storage(size_t capacity);
+  Storage(Shape<T>& shape);
+  Storage(Shape<T>&& shape);
   Storage(nested_init_list_t<T, 1> l);
   Storage(nested_init_list_t<T, 2> l);
   Storage(nested_init_list_t<T, 3> l);
@@ -73,7 +87,7 @@ class Storage {
   Storage(nested_init_list_t<T, 6> l);
   Storage(nested_init_list_t<T, 7> l);
   Storage(Container_ref c);
-  Storage(Container_ref c, Shape<T> newShape);
+  Storage(Container_ref c, Shape<T>& newShape);
 
   /* copy and move constructors*/
   Storage(Storage<T, Container_noref>& other);
@@ -95,7 +109,7 @@ class Storage {
   constexpr size_t size() const noexcept { return data.size(); }
   constexpr size_t capacity() const noexcept { return data.capacity(); }
 
-  /* indexing and iterators */
+  /* indexing and view */
   base_type const& operator[](int i) const;
   base_type& operator[](int i);
 
@@ -104,6 +118,10 @@ class Storage {
   template <class Arg, class... Args>
   base_type& operator()(Arg arg, Args... args);
 
+  template <class Arg, class... Args>
+  Storage<pointer_type, vector<pointer_type>> view(Arg arg, Args... args);
+
+  /* iterators */
   iterator begin() { return data.begin(); }
   const_iterator cbegin() { return data.cbegin(); }
   iterator end() { return data.end(); }
@@ -116,6 +134,7 @@ class Storage {
   void resize_flat();
 };
 
+
 /*************************
  * IMPLEMENTATION
  **************************/
@@ -125,6 +144,16 @@ class Storage {
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(size_t capacity) : shape_(capacity), strides_(shape_) {
   data.reserve(capacity);
+}
+
+template <typename T, typename Container>
+inline Storage<T, Container>::Storage(Shape<T>& shape) : shape_(shape), strides_(shape) {
+  data.reserve(shape.calc_size());
+}
+
+template <typename T, typename Container>
+inline Storage<T, Container>::Storage(Shape<T>&& shape) : shape_(shape), strides_(shape_) {
+  data.reserve(shape_.calc_size());
 }
 
 template <typename T, typename Container>
@@ -169,7 +198,7 @@ inline Storage<T, Container>::Storage(Container_ref c)
     : data(c), shape_(capacity()), strides_(shape_) {}
 
 template <typename T, typename Container>
-inline Storage<T, Container>::Storage(Container_ref c, Shape<T> newShape)
+inline Storage<T, Container>::Storage(Container_ref c, Shape<T>& newShape)
     : data(c), shape_(newShape), strides_(newShape) {}
 
 /* copy and move constructors*/
@@ -194,15 +223,6 @@ inline Storage<T, Container>::Storage(Storage<T, Container_ref>&& other)
       strides_(std::move(other.strides())) {}
 
 /* helper functions */
-
-template <typename T, typename Container>
-inline bool Storage<T, Container>::out_of_bound(int i) {
-  if (i < 0) {
-    return static_cast<size_t>(-i) >= size();
-  }
-  return static_cast<size_t>(i) >= size();
-}
-
 template <typename T, typename Container>
 inline auto Storage<T, Container>::getElement(size_t i, vector<base_type>& vec) -> base_type& {
   return vec[i];
@@ -244,36 +264,81 @@ inline void Storage<T, Container>::fillStorage(std::initializer_list<S> l) {
 }
 
 template <typename T, typename Container>
-template <size_t dim, class Arg, class... Args>
-inline size_t Storage<T, Container>::getIndex(Arg arg, Args... args) const {
-  if (arg < 0) {
-    arg = static_cast<int>(shape_[dim]) + arg;
+inline size_t Storage<T, Container>::convertIndexIfNeg(int index, size_t ceiling) const {
+  if (index < 0) {
+    index = static_cast<int>(ceiling) + index;
   }
-  return strides_[dim] * static_cast<size_t>(arg) + getIndex<dim + 1>(args...);
+  return static_cast<size_t>(index);
+}
+
+
+template <typename T, typename Container>
+template <size_t dim, class Arg, class... Args>
+inline size_t Storage<T, Container>::computeFlattenedIndex(Arg arg, Args... args) const {
+  return strides_[dim] * convertIndexIfNeg(arg, shape_[dim]) +
+         computeFlattenedIndex<dim + 1>(args...);
 }
 
 template <typename T, typename Container>
 template <size_t dim>
-inline size_t Storage<T, Container>::getIndex() const {
+inline size_t Storage<T, Container>::computeFlattenedIndex() const {
   return 0;
 }
 
-/* indexing */
+template <typename T, typename Container>
+inline size_t Storage<T, Container>::computeFlattenedIndex(vector<int> idx_vec) const {
+  size_t dim = 0;
+  size_t index = 0;
+  for (auto i : idx_vec) {
+    index += strides_[dim] * convertIndexIfNeg(i, shape_[dim]);
+    dim++;
+  }
+
+  return index;
+}
+
+template <typename T, typename Container>
+inline auto Storage<T, Container>::makeVecOfIndices(int index, size_t) const -> vector<int> {
+  return vector<int>({index});
+}
+
+template <typename T, typename Container>
+inline auto Storage<T, Container>::makeVecOfIndices(slice& indices, size_t) const -> vector<int> {
+  return indices.convert();
+}
+
+template <typename T, typename Container>
+inline auto Storage<T, Container>::makeVecOfIndices(range& indices, size_t dim) const
+    -> vector<int> {
+  return indices.convert(*this, dim);
+}
+template <typename T, typename Container>
+inline auto Storage<T, Container>::makeVecOfIndices(all& indices, size_t dim) const -> vector<int> {
+  return indices.convert(*this, dim);
+}
+
+template <typename T, typename Container>
+template <size_t dim, class Arg, class... Args>
+inline void Storage<T, Container>::makeSlices(vector<vector<int>>& slices, Arg arg,
+                                              Args... args) const {
+  slices.push_back(makeVecOfIndices(arg, dim));
+  makeSlices<dim + 1>(slices, args...);
+}
+
+template <typename T, typename Container>
+template <size_t dim>
+inline void Storage<T, Container>::makeSlices(vector<vector<int>>& slices) const {}
+
+/* indexing and view */
 
 template <typename T, typename Container>
 inline auto Storage<T, Container>::operator[](int i) const -> base_type const& {
-  if (i < 0) {
-    i = static_cast<int>(size()) + i;
-  }
-  return getElement(i, data);
+  return getElement(convertIndexIfNeg(i, size()), data);
 }
 
 template <typename T, typename Container>
 inline auto Storage<T, Container>::operator[](int i) -> base_type& {
-  if (i < 0) {
-    i = static_cast<int>(size()) + i;
-  }
-  return getElement(i, data);
+  return getElement(convertIndexIfNeg(i, size()), data);
 }
 
 template <typename T, typename Container>
@@ -281,42 +346,78 @@ template <class Arg, class... Args>
 inline auto Storage<T, Container>::operator()(Arg arg, Args... args) const -> base_type const& {
   /* check correct number of arguments*/
   constexpr size_t nargs = sizeof...(Args) + 1;
-  constexpr size_t ndims = shape_.ndims();
+  size_t ndims = shape_.ndims();
   if (nargs != ndims) {
     throw IndexError(ndims, nargs);
   }
 
-  size_t index = getIndex<0>(args...);
+  size_t index = computeFlattenedIndex<0>(arg, args...);
   return getElement(index, data);
 }
 
 template <typename T, typename Container>
 template <class Arg, class... Args>
 inline auto Storage<T, Container>::operator()(Arg arg, Args... args) -> base_type& {
-  /* check correct number of arguments*/
+  // check correct number of arguments
   constexpr size_t nargs = sizeof...(Args) + 1;
   size_t ndims = shape_.ndims();
   if (nargs != ndims) {
     throw IndexError(ndims, nargs);
   }
 
-  size_t index = getIndex<0>(arg, args...);
+  size_t index = computeFlattenedIndex<0>(arg, args...);
   return getElement(index, data);
+}
+
+template <typename T, typename Container>
+template <class Arg, class... Args>
+inline auto Storage<T, Container>::view(Arg arg, Args... args)
+    -> Storage<pointer_type, vector<pointer_type>> {
+  // check enough correct number of dimensions are indexed
+  size_t num_dims = sizeof...(args) + 1;
+  if (num_dims != shape_.ndims()) {
+    throw DimensionsMismatchError(shape_.ndims(), num_dims);
+  }
+
+  // create vector of slices
+  vector<vector<int>> vec_of_slices;
+  vec_of_slices.reserve(num_dims);
+  makeSlices<0>(vec_of_slices, arg, args...);
+  // create vector of indices
+  auto all_indices = indices_from_slices(vec_of_slices);
+
+  // view shape
+  vector<size_t> view_shape;
+  view_shape.reserve(shape_.ndims());
+  for (auto s : vec_of_slices) {
+    view_shape.push_back(s.size());
+  }
+
+  // view storage
+  vector<pointer_type> view_storage;
+  view_storage.reserve(all_indices.size());
+  for (auto idx : all_indices) {
+    view_storage.push_back(&(getElement(computeFlattenedIndex(idx), data)));
+  }
+
+  // create view and return it
+  Shape<pointer_type> s(std::move(view_shape));
+  return Storage<pointer_type, vector<pointer_type>>(view_storage, s);
 }
 
 /* reshape */
 template <typename T, typename Container>
 inline auto Storage<T, Container>::reshape(initializer_list<size_t> l)
     -> Storage<T, Container_ref> {
-  /* create new shape */
+  // create new shape
   Shape new_shape = Shape(vector<size_t>{l});
 
-  /* check dimensions match */
+  // check dimensions match
   if (!shape_.is_equivalent(new_shape)) {
     throw DimensionsMismatchError(new_shape.getShape(), shape_.getShape());
   }
 
-  /* return new storage with new shape */
+  // return new storage with new shape
   return Storage<T, Container_ref>(getData(), new_shape);
 }
 
@@ -327,10 +428,10 @@ inline auto Storage<T, Container>::flatten() -> Storage<T, Container_ref> {
 
 template <typename T, typename Container>
 inline void Storage<T, Container>::resize(initializer_list<size_t> l) {
-  /* create new shape */
+  // create new shape
   Shape new_shape = Shape(vector<size_t>{l});
 
-  /* check dimensions match */
+  // check dimensions match
   if (!shape_.is_equivalent(new_shape)) {
     throw DimensionsMismatchError(new_shape.getShape(), shape_.getShape());
   }

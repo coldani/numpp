@@ -43,7 +43,8 @@ class Shape {
  public:
   /* constructors */
   Shape() = default;
-  Shape(size_t single_dim) : shape({single_dim}) {}
+  template <typename Arg, typename... Args>
+  Shape(Arg arg, Args... args) : shape({static_cast<size_t>(arg), static_cast<size_t>(args)...}) {}
   Shape(initializer_list<T> l) : shape({l.size()}) {}
   Shape(nested_init_list_t<T, 2> l);
   Shape(nested_init_list_t<T, 3> l);
