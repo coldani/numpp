@@ -3,7 +3,6 @@
 //  numpp
 //
 //  Created by Daniele Colombo on 21/06/2022.
-// DISCLAIMER:
 //
 
 #ifndef utilities_hpp
@@ -45,7 +44,7 @@ using nested_init_list_t = typename nested_init_list<T, I>::type;
 template <typename T>
 class DimensionsChecker {
   template <size_t I>
-  void checkDimensionsAs(nested_init_list_t<T, I> l, size_t dims) {
+  void checkDimensionInInitList(nested_init_list_t<T, I> l, size_t dims) {
     // check for this dimension
     for (auto e : l) {
       if (e.size() != dims) {
@@ -55,12 +54,12 @@ class DimensionsChecker {
     // go one dimension deeper
     size_t inner_dims = (*(*l.begin()).begin()).size();
     for (auto e : l) {
-      checkDimensionsAs<I - 1>(e, inner_dims);
+      checkDimensionInInitList<I - 1>(e, inner_dims);
     }
   }
 
   template <>
-  void checkDimensionsAs<2>(nested_init_list_t<T, 2> l, size_t dims) {
+  void checkDimensionInInitList<2>(nested_init_list_t<T, 2> l, size_t dims) {
     // check for this dimension
     for (auto e : l) {
       if (e.size() != dims) {
@@ -71,12 +70,12 @@ class DimensionsChecker {
 
  public:
   template <size_t I>
-  void check(nested_init_list_t<T, I> l) {
+  void checkNestedInitList(nested_init_list_t<T, I> l) {
     size_t dims = (*l.begin()).size();
-    checkDimensionsAs<I>(l, dims);
+    checkDimensionInInitList<I>(l, dims);
   }
   template <>
-  void check<1>(nested_init_list_t<T, 1> l) {}
+  void checkNestedInitList<1>(nested_init_list_t<T, 1> l) {}
 };
 
 /***************************

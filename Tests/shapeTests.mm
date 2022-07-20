@@ -1,5 +1,5 @@
 //
-//  TestShape.m
+//  shapeTests.mm
 //  Tests
 //
 //  Created by Daniele Colombo on 06/07/2022.
@@ -149,6 +149,11 @@
     XCTAssertEqual(sOther[0], 2);
 }
 
+- (void)testGetChecker {
+    npp::Shape<int> s{1, 2};
+    s.getChecker();
+}
+
 - (void)testExceptions {
     try {
         npp::Shape<int> s{
@@ -163,6 +168,23 @@
     }
     
 }
+
+- (void)testComparison {
+    npp::Shape<int> s{1, 2};
+    npp::Shape<double> s1{10, 11};
+    npp::Shape<int> s2{
+        {{1,  2,  3,  4},  {5,  6,  7,  8}},
+        {{13, 14, 15, 16}, {17, 18, 19, 20}}
+    };
+    npp::Shape<int> s3 {1, 2, 3};
+    
+    XCTAssertTrue(s == s1);
+    XCTAssertTrue(s1 == s);
+    XCTAssertFalse(s == s2);
+    XCTAssertFalse(s2 == s1);
+    XCTAssertFalse(s3 == s);
+}
+
 
 @end
 

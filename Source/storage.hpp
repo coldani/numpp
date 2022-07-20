@@ -77,8 +77,10 @@ class Storage {
   /* constructors */
   Storage() = default;
   explicit Storage(size_t capacity);
-  Storage(Shape<T>& shape);
-  Storage(Shape<T>&& shape);
+  template <typename otherT>
+  Storage(Shape<otherT> const& shape);
+  template <typename otherT>
+  Storage(Shape<otherT>&& shape);
   Storage(nested_init_list_t<T, 1> l);
   Storage(nested_init_list_t<T, 2> l);
   Storage(nested_init_list_t<T, 3> l);
@@ -87,7 +89,7 @@ class Storage {
   Storage(nested_init_list_t<T, 6> l);
   Storage(nested_init_list_t<T, 7> l);
   Storage(Container_ref c);
-  Storage(Container_ref c, Shape<T>& newShape);
+  Storage(Container_ref c, Shape<T> const& newShape);
 
   /* copy and move constructors*/
   Storage(Storage<T, Container_noref>& other);
@@ -107,7 +109,6 @@ class Storage {
 
   /* object state inspectors */
   constexpr size_t size() const noexcept { return data.size(); }
-  constexpr size_t capacity() const noexcept { return data.capacity(); }
 
   /* indexing */
   base_type const& operator[](int i) const;
@@ -137,7 +138,6 @@ class Storage {
   void resize_flat();
 };
 
-
 /*************************
  * IMPLEMENTATION
  **************************/
@@ -145,19 +145,18 @@ class Storage {
 /* constructors */
 
 template <typename T, typename Container>
-inline Storage<T, Container>::Storage(size_t capacity) : shape_(capacity), strides_(shape_) {
-  data.reserve(capacity);
-}
+inline Storage<T, Container>::Storage(size_t capacity)
+    : data(capacity), shape_(capacity), strides_(shape_) {}
 
 template <typename T, typename Container>
-inline Storage<T, Container>::Storage(Shape<T>& shape) : shape_(shape), strides_(shape) {
-  data.reserve(shape.calc_size());
-}
+template <typename otherT>
+inline Storage<T, Container>::Storage(Shape<otherT> const& shape)
+    : data(shape.calc_size()), shape_(shape), strides_(shape) {}
 
 template <typename T, typename Container>
-inline Storage<T, Container>::Storage(Shape<T>&& shape) : shape_(shape), strides_(shape_) {
-  data.reserve(shape_.calc_size());
-}
+template <typename otherT>
+inline Storage<T, Container>::Storage(Shape<otherT>&& shape)
+    : data(shape.calc_size()), shape_(shape), strides_(shape) {}
 
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 1> l)
@@ -198,10 +197,10 @@ inline Storage<T, Container>::Storage(nested_init_list_t<T, 7> l) : shape_(l), s
 
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(Container_ref c)
-    : data(c), shape_(capacity()), strides_(shape_) {}
+    : data(c), shape_(c.size()), strides_(shape_) {}
 
 template <typename T, typename Container>
-inline Storage<T, Container>::Storage(Container_ref c, Shape<T>& newShape)
+inline Storage<T, Container>::Storage(Container_ref c, Shape<T> const& newShape)
     : data(c), shape_(newShape), strides_(newShape) {}
 
 /* copy and move constructors*/

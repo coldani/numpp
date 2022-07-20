@@ -68,9 +68,13 @@ class Shape {
   template <typename otherT>
   Shape<T>& operator=(Shape<otherT>&& other);
 
-  /* assigmnent overloading */
+  /* assignment operator overloading */
   Shape<T>& operator=(vector<size_t> const& otherShape);
   Shape<T>& operator=(vector<size_t>&& otherShape);
+
+  /* comparison operator overloading */
+  template <typename oneT, typename twoT>
+  friend bool operator==(Shape<oneT> const& one, Shape<twoT> const& two);
 
   /* getters */
   vector<size_t> const& getShape() const { return shape; }
@@ -120,37 +124,37 @@ class Strides {
 /* constructors */
 template <typename T>
 inline Shape<T>::Shape(nested_init_list_t<T, 2> l) {
-  checker.template check<2>(l);
+  checker.template checkNestedInitList<2>(l);
   shape.reserve(2);
   fillShape<2>(l);
 }
 template <typename T>
 inline Shape<T>::Shape(nested_init_list_t<T, 3> l) {
-  checker.template check<3>(l);
+  checker.template checkNestedInitList<3>(l);
   shape.reserve(3);
   fillShape<3>(l);
 }
 template <typename T>
 inline Shape<T>::Shape(nested_init_list_t<T, 4> l) {
-  checker.template check<4>(l);
+  checker.template checkNestedInitList<4>(l);
   shape.reserve(4);
   fillShape<4>(l);
 }
 template <typename T>
 inline Shape<T>::Shape(nested_init_list_t<T, 5> l) {
-  checker.template check<5>(l);
+  checker.template checkNestedInitList<5>(l);
   shape.reserve(5);
   fillShape<5>(l);
 }
 template <typename T>
 inline Shape<T>::Shape(nested_init_list_t<T, 6> l) {
-  checker.template check<6>(l);
+  checker.template checkNestedInitList<6>(l);
   shape.reserve(6);
   fillShape<6>(l);
 }
 template <typename T>
 inline Shape<T>::Shape(nested_init_list_t<T, 7> l) {
-  checker.template check<7>(l);
+  checker.template checkNestedInitList<7>(l);
   shape.reserve(7);
   fillShape<7>(l);
 }
@@ -169,6 +173,7 @@ inline Shape<T>& Shape<T>::operator=(Shape<otherT>&& other) {
   return *this;
 }
 
+/* assignment operator overloading */
 template <typename T>
 inline Shape<T>& Shape<T>::operator=(vector<size_t> const& otherShape) {
   shape = otherShape;
@@ -179,6 +184,19 @@ template <typename T>
 inline Shape<T>& Shape<T>::operator=(vector<size_t>&& otherShape) {
   shape = otherShape;
   return *this;
+}
+
+/* comparison operator overloading */
+template <typename oneT, typename twoT>
+inline bool operator==(Shape<oneT> const& one, Shape<twoT> const& two) {
+  // check same number of dimensions
+  if (one.getShape().size() != two.getShape().size()) return false;
+  // check same size in each dimension
+  for (auto i = 0u; i < one.getShape().size(); i++) {
+    if (one.getShape()[i] != two.getShape()[i]) return false;
+  }
+  // otherwise return true
+  return true;
 }
 
 /* helper functions*/

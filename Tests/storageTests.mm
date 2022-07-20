@@ -1,5 +1,5 @@
 //
-//  TestsStorage.m
+//  storageTests.mm
 //  Tests
 //
 //  Created by Daniele Colombo on 24/06/2022.
@@ -26,15 +26,13 @@
 - (void)testEmptyInitialize {
     npp::Storage<int> storage;
     XCTAssertEqual(storage.size(), 0);
-    XCTAssertEqual(storage.capacity(), 0);
     XCTAssertEqual(storage.shape().ndims(), 0);
     XCTAssertEqual(storage.strides().ndims(), 0);
 }
 
-- (void)testReserveInitialize {
+- (void)testCapacityInitialize {
     npp::Storage<int> storage(3);
-    XCTAssertEqual(storage.size(), 0);
-    XCTAssertEqual(storage.capacity(), 3);
+    XCTAssertEqual(storage.size(), 3);
     XCTAssertEqual(storage.shape().ndims(), 1);
     XCTAssertEqual(storage.shape()[0], 3);
     XCTAssertEqual(storage.strides().ndims(), 1);
@@ -49,10 +47,6 @@
     XCTAssertEqual(storage1.size(), 1);
     XCTAssertEqual(storage3.size(), 3);
     XCTAssertEqual(storage0.size(), 0);
-    
-    XCTAssertEqual(storage1.capacity(), 1);
-    XCTAssertEqual(storage3.capacity(), 3);
-    XCTAssertEqual(storage0.capacity(), 0);
     
     XCTAssertEqual(storage1.shape().ndims(), 1);
     XCTAssertEqual(storage3.shape().ndims(), 1);
@@ -72,7 +66,6 @@
     npp::Storage<int> otherStorage(storage);
     
     XCTAssertEqual(otherStorage.size(), 3);
-    XCTAssertEqual(otherStorage.capacity(), 3);
     XCTAssertEqual(otherStorage.shape().ndims(), 1);
     XCTAssertEqual(otherStorage.shape()[0], 3);
     XCTAssertEqual(otherStorage.strides().ndims(), 1);
@@ -100,7 +93,6 @@
     otherStorage = storage;
     
     XCTAssertEqual(otherStorage.size(), 3);
-    XCTAssertEqual(otherStorage.capacity(), 3);
     XCTAssertEqual(otherStorage.shape().ndims(), 1);
     XCTAssertEqual(otherStorage.shape()[0], 3);
     XCTAssertEqual(otherStorage.strides().ndims(), 1);
@@ -126,7 +118,6 @@
     npp::Storage<int> otherStorage(std::move(storage));
     
     XCTAssertEqual(otherStorage.size(), 3);
-    XCTAssertEqual(otherStorage.capacity(), 3);
     XCTAssertEqual(otherStorage.shape().ndims(), 1);
     XCTAssertEqual(otherStorage.shape()[0], 3);
     XCTAssertEqual(otherStorage.strides().ndims(), 1);
@@ -144,7 +135,6 @@
     otherStorage = std::move(storage);
     
     XCTAssertEqual(otherStorage.size(), 3);
-    XCTAssertEqual(otherStorage.capacity(), 3);
     XCTAssertEqual(otherStorage.shape().ndims(), 1);
     XCTAssertEqual(otherStorage.shape()[0], 3);
     XCTAssertEqual(otherStorage.strides().ndims(), 1);
@@ -153,6 +143,14 @@
     XCTAssertEqual(otherStorage[0], 1);
     XCTAssertEqual(otherStorage[1], 2);
     XCTAssertEqual(otherStorage[2], 3);
+}
+
+- (void)testConstGetData {
+    npp::Storage<int> const storage {1, 2, 3};
+    auto data = storage.getData();
+    
+    XCTAssertEqual(data.size(), 3);
+    XCTAssertEqual(data[0], 1);
 }
 
 
@@ -503,8 +501,7 @@
 
 - (void)testEmptyMultiDimStorage {
     npp::Storage<int> s {npp::Shape(4,3,2)};
-    XCTAssertEqual(s.size(), 0);
-    XCTAssertEqual(s.capacity(), 24);
+    XCTAssertEqual(s.size(), 24);
     
     XCTAssertEqual(s.shape().ndims(), 3);
     XCTAssertEqual(s.shape()[0], 4);
@@ -520,7 +517,6 @@
 - (void)test2DStorage {
     npp::Storage<int> s {{1, 2, 3}, {4, 5, 6}};
     XCTAssertEqual(s.size(), 6);
-    XCTAssertEqual(s.capacity(), 6);
     
     XCTAssertEqual(s.shape().ndims(), 2);
     XCTAssertEqual(s.shape()[0], 2);
@@ -542,7 +538,6 @@
         {{13, 14, 15, 16}, {17, 18, 19, 20}, {21, 22, 23, 24}}
     };
     XCTAssertEqual(s.size(), 24);
-    XCTAssertEqual(s.capacity(), 24);
     
     XCTAssertEqual(s.shape().ndims(), 3);
     XCTAssertEqual(s.shape()[0], 2);
@@ -849,7 +844,6 @@
     XCTAssertEqual(s(2,1,3), 24);
     
     XCTAssertEqual(s.size(), 24);
-    XCTAssertEqual(s.capacity(), 24);
     
     XCTAssertEqual(s.shape().ndims(), 3);
     XCTAssertEqual(s.shape()[0], 3);
@@ -874,7 +868,6 @@
     XCTAssertEqual(s(-1), 24);
     
     XCTAssertEqual(s.size(), 24);
-    XCTAssertEqual(s.capacity(), 24);
     
     XCTAssertEqual(s.shape().ndims(), 1);
     XCTAssertEqual(s.shape()[0], 24);;
