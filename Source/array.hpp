@@ -78,6 +78,7 @@ class array {
   base_type const& operator()(Arg arg, Args... args) const {
     return storage(arg, args...);
   }
+
   template <class Arg, class... Args>
   base_type& operator()(Arg arg, Args... args) {
     return storage(arg, args...);
@@ -88,8 +89,10 @@ class array {
   array<pointer_type, vector<pointer_type>> view(Arg arg, Args... args) {
     return array<pointer_type, vector<pointer_type>>(storage.view(arg, args...));
   }
+
   array<T, Container_ref> view() { return array<T, Container_ref>(storage.view()); }
-  array<base_type, vector<base_type>> copy() {
+
+  array<base_type, vector<base_type>> copy() const {
     return array<base_type, vector<base_type>>(storage.copy());
   }
 
@@ -97,7 +100,9 @@ class array {
   array<T, Container_ref> reshape(initializer_list<size_t> l) {
     return array<T, Container_ref>(storage.reshape(l));
   }
+
   array<T, Container_ref> flatten() { return array<T, Container_ref>(storage.flatten()); }
+
   void resize(initializer_list<size_t> l) { storage.resize(l); }
   void resize_flat() { storage.resize_flat(); }
 
@@ -151,8 +156,8 @@ class array {
   array<char> operator<=(otherT element) const;
 
   /* any() and all() */
-  bool any();
-  bool all();
+  bool any() const;
+  bool all() const;
 };
 
 /*************************
@@ -414,7 +419,7 @@ inline auto array<T, Container>::operator<=(otherT element) const -> array<char>
 
 /* any() and all() */
 template <typename T, typename Container>
-inline bool array<T, Container>::any() {
+inline bool array<T, Container>::any() const {
   for (auto i = 0; i < size(); i++) {
     if ((*this)[i]) return true;
   }
@@ -422,7 +427,7 @@ inline bool array<T, Container>::any() {
 }
 
 template <typename T, typename Container>
-inline bool array<T, Container>::all() {
+inline bool array<T, Container>::all() const {
   for (auto i = 0; i < size(); i++) {
     if (!(*this)[i]) return false;
   }

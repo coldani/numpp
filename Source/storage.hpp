@@ -123,7 +123,7 @@ class Storage {
   template <class Arg, class... Args>
   Storage<pointer_type, vector<pointer_type>> view(Arg arg, Args... args);
   Storage<T, Container_ref> view();
-  Storage<base_type, vector<base_type>> copy();
+  Storage<base_type, vector<base_type>> copy() const;
 
   /* iterators */
   iterator begin() { return data.begin(); }
@@ -415,7 +415,7 @@ inline auto Storage<T, Container>::view() -> Storage<T, Container_ref> {
 }
 
 template <typename T, typename Container>
-inline auto Storage<T, Container>::copy() -> Storage<base_type, vector<base_type>> {
+inline auto Storage<T, Container>::copy() const -> Storage<base_type, vector<base_type>> {
   vector<base_type> c;
   c.reserve(data.size());
   for (size_t i = 0; i < data.size(); i++) {
