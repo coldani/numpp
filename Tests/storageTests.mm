@@ -803,6 +803,82 @@
     XCTAssertEqual(s(1, -1), new_s(7));
 }
 
+- (void)testTranspose1D {
+    npp::Storage<int> s{1, 2, 3, 4};
+    auto s_t = s.transpose();
+    
+    XCTAssertEqual(s_t.shape().ndims(), 1);
+    XCTAssertEqual(s_t.shape()[0], 4);
+    
+    XCTAssertEqual(s_t(0), s(0));
+    XCTAssertEqual(s_t(1), s(1));
+    XCTAssertEqual(s_t(2), s(2));
+
+    XCTAssertEqual(s_t(0), 1);
+    XCTAssertEqual(s_t(1), 2);
+    XCTAssertEqual(s_t(2), 3);
+}
+
+- (void)testTranspose2D {
+    npp::Storage<int> s{{1, 2, 3, 4}, {5, 6, 7, 8}};
+    auto s_t = s.transpose();
+    
+    XCTAssertEqual(s_t.shape().ndims(), 2);
+    XCTAssertEqual(s_t.shape()[0], 4);
+    XCTAssertEqual(s_t.shape()[1], 2);
+    
+    XCTAssertEqual(s_t(0, 0), s(0, 0));
+    XCTAssertEqual(s_t(0, 1), s(1, 0));
+    XCTAssertEqual(s_t(1, 0), s(0, 1));
+    XCTAssertEqual(s_t(2, 1), s(1, 2));
+
+    XCTAssertEqual(s_t(0, 0), 1);
+    XCTAssertEqual(s_t(0, 1), 5);
+    XCTAssertEqual(s_t(1, 0), 2);
+    XCTAssertEqual(s_t(2, 1), 7);
+    
+    s(1, 0) = 500;
+    XCTAssertEqual(s(1,0), 500);
+    XCTAssertEqual(s_t(0,1), 500);
+    s_t(2, 1) = 700;
+    XCTAssertEqual(s(1,2), 700);
+    XCTAssertEqual(s_t(2,1), 700);
+}
+
+- (void)testTranspose3D {
+    npp::Storage<int> s{
+        {{0,  1,  2,  3},
+         {4,  5,  6,  7},
+         {8,  9,  10, 11}},
+
+        {{12, 13, 14, 15},
+         {16, 17, 18, 19},
+         {20, 21, 22, 23}}
+    };
+    auto s_t = s.transpose();
+    
+    XCTAssertEqual(s_t.shape().ndims(), 3);
+    XCTAssertEqual(s_t.shape()[0], 4);
+    XCTAssertEqual(s_t.shape()[1], 3);
+    XCTAssertEqual(s_t.shape()[2], 2);
+    
+    XCTAssertEqual(s_t(0, 0, 0), s(0, 0, 0));
+    XCTAssertEqual(s_t(0, 2, 1), s(1, 2, 0));
+    XCTAssertEqual(s_t(3, 2, 1), s(1, 2, 3));
+
+    XCTAssertEqual(s_t(0, 0, 0), 0);
+    XCTAssertEqual(s_t(0, 2, 1), 20);
+    XCTAssertEqual(s_t(3, 2, 1), 23);
+    
+    s(1, 2, 0) = 200;
+    XCTAssertEqual(s(1, 2, 0), 200);
+    XCTAssertEqual(s_t(0, 2, 1), 200);
+    
+    s_t(3, 2, 1) = 230;
+    XCTAssertEqual(s(1, 2, 3), 230);
+    XCTAssertEqual(s_t(3, 2, 1), 230);
+}
+
 - (void)testWrongShape {
     npp::Storage<int> s{{1, 2, 3, 4}, {5, 6, 7, 8}};
     
@@ -1054,6 +1130,19 @@
     s(0) = 100;
     XCTAssertEqual(s(0), 100);
     XCTAssertEqual(view(0), 100);
+    
+    npp::Storage<int> const sc{1, 2, 3};
+    auto const viewc = sc.view();
+    XCTAssertEqual(viewc.size(), 3);
+    XCTAssertEqual(viewc.shape().ndims(), 1);
+    XCTAssertEqual(viewc.shape()[0], 3);
+    XCTAssertEqual(viewc(0), 1);
+    
+    auto viewc2 = sc.view(npp::slice({0, 2}));
+    XCTAssertEqual(viewc2.size(), 2);
+    XCTAssertEqual(viewc2.shape().ndims(), 1);
+    XCTAssertEqual(viewc2.shape()[0], 2);
+    XCTAssertEqual(viewc2(1), 3);
 }
 
 - (void)testViewException {

@@ -238,6 +238,32 @@
     XCTAssertEqual(v2(1,1), 500);
 }
 
+- (void)testConstView {
+    npp::array<int> const a{{1, 2, 3}, {4, 5, 6}};
+    auto v = a.view(1, npp::all());
+    
+    XCTAssertEqual(v.size(), 3);
+    XCTAssertEqual(v.shape().ndims(), 2);
+    XCTAssertEqual(v.shape()[0], 1);
+    XCTAssertEqual(v.shape()[1], 3);
+    
+    XCTAssertEqual(v(0, 0), 4);
+    XCTAssertEqual(v(0, 1), 5);
+    XCTAssertEqual(v(0 ,2), 6);
+    
+    
+    auto const v2 = a.view();
+    XCTAssertEqual(v2.size(), 6);
+    XCTAssertEqual(v2.shape().ndims(), 2);
+    XCTAssertEqual(v2.shape()[0], 2);
+    XCTAssertEqual(v2.shape()[1], 3);
+    
+    XCTAssertEqual(v2(0, 0), 1);
+    XCTAssertEqual(v2(1, 0), 4);
+    XCTAssertEqual(v2(0, 2), 3);
+    XCTAssertEqual(v2(1, -1), 6);
+}
+
 - (void)testCopy {
     npp::array<int> a{{1, 2, 3}, {4, 5, 6}};
     auto v = a.view();
@@ -320,6 +346,40 @@
     a(1, 1) = 500;
     XCTAssertEqual(a(1,1), 500);
     XCTAssertEqual(v(4), 500);
+}
+
+- (void)testTranspose {
+    npp::array<int> a{
+        {{0,  1,  2,  3},
+         {4,  5,  6,  7},
+         {8,  9,  10, 11}},
+
+        {{12, 13, 14, 15},
+         {16, 17, 18, 19},
+         {20, 21, 22, 23}}
+    };
+    auto a_t = a.transpose();
+    
+    XCTAssertEqual(a_t.shape().ndims(), 3);
+    XCTAssertEqual(a_t.shape()[0], 4);
+    XCTAssertEqual(a_t.shape()[1], 3);
+    XCTAssertEqual(a_t.shape()[2], 2);
+    
+    XCTAssertEqual(a_t(0, 0, 0), a(0, 0, 0));
+    XCTAssertEqual(a_t(0, 2, 1), a(1, 2, 0));
+    XCTAssertEqual(a_t(3, 2, 1), a(1, 2, 3));
+
+    XCTAssertEqual(a_t(0, 0, 0), 0);
+    XCTAssertEqual(a_t(0, 2, 1), 20);
+    XCTAssertEqual(a_t(3, 2, 1), 23);
+    
+    a(1, 2, 0) = 200;
+    XCTAssertEqual(a(1, 2, 0), 200);
+    XCTAssertEqual(a_t(0, 2, 1), 200);
+    
+    a_t(3, 2, 1) = 230;
+    XCTAssertEqual(a(1, 2, 3), 230);
+    XCTAssertEqual(a_t(3, 2, 1), 230);
 }
 
 - (void)testResize {
@@ -686,5 +746,121 @@
         XCTAssertTrue(false);
     }
 }
+
+@end
+
+
+@interface ArrayDotTests : XCTestCase
+
+@end
+
+@implementation ArrayDotTests
+
+- (void)test1Dot1 {
+    npp::array<double> a1{1, 2, 3};
+    npp::array<double> a2{4, 5, 6};
+    
+    auto result = a1.dot(a2);
+    XCTAssertEqual(result.shape().ndims(), 1);
+    XCTAssertEqual(result.shape()[0], 1);
+    XCTAssertEqual(result(0), 32);
+}
+
+- (void)test1Dot2 {
+    npp::array<double> a1{1, 2, 3};
+    npp::array<double> a2{{4, 5}, {6, 7}, {8, 9}};
+    
+    
+    auto result = a1.dot(a2);
+    XCTAssertEqual(result.shape().ndims(), 1);
+    XCTAssertEqual(result.shape()[0], 2);
+    XCTAssertEqual(result(0), 40);
+    XCTAssertEqual(result(1), 46);
+}
+
+- (void)test2Dot1 {
+    npp::array<double> a1{{1, 2, 3}, {4, 5, 6}};
+    npp::array<double> a2{7, 8, 9};
+    
+    auto result = a1.dot(a2);
+    XCTAssertEqual(result.shape().ndims(), 1);
+    XCTAssertEqual(result.shape()[0], 2);
+    XCTAssertEqual(result(0), 50);
+    XCTAssertEqual(result(1), 122);
+}
+
+- (void)test2Dot2 {
+    npp::array<double> a1{{1, 2, 3}, {4, 5, 6}};
+    npp::array<double> a2{{7, 8}, {9, 10}, {11, 12}};
+    
+    auto result = a1.dot(a2);
+    XCTAssertEqual(result.shape().ndims(), 2);
+    XCTAssertEqual(result.shape()[0], 2);
+    XCTAssertEqual(result.shape()[1], 2);
+    XCTAssertEqual(result(0, 0), 58);
+    XCTAssertEqual(result(0, 1), 64);
+    XCTAssertEqual(result(1, 0), 139);
+    XCTAssertEqual(result(1, 1), 154);
+}
+
+- (void)testExceptions {
+    try { // > 2 dims
+        npp::array<double> a1{{1, 2, 3}, {4, 5, 6}, {4, 5, 6}};
+        npp::array<double> a2{{{7, 8}, {9, 10}},
+                            {{7, 8}, {9, 10}}};
+        a1.dot(a2);
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    try { // 1dot1
+        npp::array<double> a1{1, 2, 3};
+        npp::array<double> a2{7, 8};
+        a1.dot(a2);
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    try { // 1dot2
+        npp::array<double> a1{1, 2, 3};
+        npp::array<double> a2{{7, 8}, {9, 10}};
+        a1.dot(a2);
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    try { // 2dot1
+        npp::array<double> a1{{7, 8}, {9, 10}, {9, 10}};
+        npp::array<double> a2{1, 2, 3};
+        a1.dot(a2);
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+    
+    try { // 2dot2
+        npp::array<double> a1{{7, 8}, {9, 10}, {9, 10}};
+        npp::array<double> a2{{7, 8}, {9, 10}, {9, 10}};
+        a1.dot(a2);
+        XCTAssertTrue(false);
+    } catch (npp::DimensionsMismatchError) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+}
+
+
 
 @end

@@ -103,7 +103,7 @@ inline vector<vector<int>> indices_from_slices(vector<vector<int>> const& vec_of
 
 struct all {
   template <typename T>
-  vector<int> convert(T const& storage, size_t dim) {
+  vector<int> convert(T const& storage, size_t dim) const {
     size_t size = storage.shape()[dim];
     vector<int> indices;
     indices.reserve(size);
@@ -118,7 +118,7 @@ struct slice {
   vector<int> indices;
 
   slice(initializer_list<int> l) : indices(l) {}
-  vector<int> convert() { return indices; }
+  vector<int> convert() const { return indices; }
 };
 
 struct range {
@@ -129,24 +129,24 @@ struct range {
   range(int start, int end, int step = 1) : start(start), end(end), step(step) {}
 
   template <typename T>
-  vector<int> convert(T const& storage, size_t dim) {
+  vector<int> convert(T const& storage, size_t dim) const {
     // convert indices
     size_t ceiling = storage.shape()[dim];
-    start = convertIndex(start, ceiling);
-    end = convertIndex(end, ceiling);
+    int new_start = convertIndex(start, ceiling);
+    int new_end = convertIndex(end, ceiling);
     // check range inputs are OK - note doesn't check they fit into storage
-    if (step == 0 || (step > 0 && end < start) || (step < 0 && end > start)) {
+    if (step == 0 || (step > 0 && new_end < new_start) || (step < 0 && new_end > new_start)) {
       throw InvalidRange(start, end, step);
     }
 
     // convert range
     vector<int> indices;
     if (step > 0) {
-      for (int i = start; i <= end; i += step) {
+      for (int i = new_start; i <= new_end; i += step) {
         indices.push_back(i);
       }
     } else {
-      for (int i = start; i >= end; i += step) {
+      for (int i = new_start; i >= new_end; i += step) {
         indices.push_back(i);
       }
     }
@@ -154,7 +154,7 @@ struct range {
   }
 
  private:
-  int convertIndex(int index, size_t ceiling) {
+  int convertIndex(int index, size_t ceiling) const {
     if (index < 0) {
       index = static_cast<int>(ceiling) + index;
     }
