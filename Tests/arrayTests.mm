@@ -411,6 +411,36 @@
     XCTAssertEqual(a(5), 6);
 }
 
+
+- (void)testDiagonal {
+    npp::array<int> a{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    auto d = a.diagonal();
+
+    XCTAssertEqual(d.shape().ndims(), 1);
+    XCTAssertEqual(d.size(), 3);
+    XCTAssertEqual(d(0), 1);
+    XCTAssertEqual(d(1), 5);
+    XCTAssertEqual(d(2), 9);
+    
+    a(0, 0) = 100;
+    XCTAssertEqual(a(0,0), 100);
+    XCTAssertEqual(d(0), 100);
+    d(1) = 500;
+    XCTAssertEqual(a(1,1), 500);
+    XCTAssertEqual(d(1), 500);
+}
+
+- (void)testConstDiagonal {
+    npp::array<int> const a{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    auto d = a.diagonal();
+
+    XCTAssertEqual(d.shape().ndims(), 1);
+    XCTAssertEqual(d.size(), 3);
+    XCTAssertEqual(d(0), 1);
+    XCTAssertEqual(d(1), 5);
+    XCTAssertEqual(d(2), 9);
+}
+
 @end
 
 

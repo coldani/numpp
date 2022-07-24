@@ -110,6 +110,32 @@ struct InvalidRange : public std::exception {
   const char* what() const throw() { return message.c_str(); }
 };
 
+struct NonSquareMatrix : public std::exception {
+  vector<size_t> const dimensions;
+  std::string message;
+
+  NonSquareMatrix(vector<size_t> const& dimensions)
+      : dimensions(dimensions), message(makeMessage()) {}
+
+  std::string makeMessage() {
+    /* get first dims to stringstream*/
+    std::stringstream dimss;
+    dimss << "(";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+      dimss << dimensions[i];
+      if (i + 1 < dimensions.size()) dimss << ", ";
+    }
+    dimss << ")";
+
+    /* concatenate message */
+    std::stringstream ss;
+    ss << dimss.str() << " is not a square matrix.";
+    return ss.str();
+  }
+
+  const char* what() const throw() { return message.c_str(); }
+};
+
 }  // namespace npp
 
 #endif /* exceptions_h */

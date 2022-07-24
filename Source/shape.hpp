@@ -83,9 +83,9 @@ class Shape {
   /* other functions */
   size_t ndims() const { return shape.size(); }
   size_t operator[](size_t i) const { return shape[i]; }
-  size_t calc_size() const;
+  size_t calcSize() const;
   template <typename otherT>
-  bool is_equivalent(Shape<otherT> const& other) const;
+  bool isEquivalent(Shape<otherT> const& other) const;
 };
 
 /***********************************
@@ -209,7 +209,7 @@ inline void Shape<T>::fillShape(nested_init_list_t<T, I> l) {
 
 /* other functions */
 template <typename T>
-inline size_t Shape<T>::calc_size() const {
+inline size_t Shape<T>::calcSize() const {
   if (ndims() == 0) {
     return 0;
   }
@@ -223,8 +223,8 @@ inline size_t Shape<T>::calc_size() const {
 
 template <typename T>
 template <typename otherT>
-inline bool Shape<T>::is_equivalent(Shape<otherT> const& other) const {
-  return calc_size() == other.calc_size();
+inline bool Shape<T>::isEquivalent(Shape<otherT> const& other) const {
+  return calcSize() == other.calcSize();
 }
 
 /*************************************

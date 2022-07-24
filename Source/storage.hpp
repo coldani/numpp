@@ -130,9 +130,13 @@ class Storage {
   Storage<pointer_type, vector<pointer_type>> view(Arg arg, Args... args);
   Storage<T, Container_ref> view();
   template <class Arg, class... Args>
-  Storage<pointer_type_const, vector<pointer_type_const>> view(Arg arg, Args... args) const;
-  Storage<T, Container_ref_const> view() const;
+  Storage<pointer_type_const, vector<pointer_type_const> const> view(Arg arg, Args... args) const;
+  Storage<T, Container_ref_const const> view() const;
   Storage<base_type, vector<base_type>> copy() const;
+
+  /* diagonal */
+  Storage<pointer_type, vector<pointer_type>> diagonal();
+  Storage<pointer_type_const, vector<pointer_type_const> const> diagonal() const;
 
   /* iterators */
   iterator begin() { return data.begin(); }
@@ -161,12 +165,12 @@ inline Storage<T, Container>::Storage(size_t capacity)
 template <typename T, typename Container>
 template <typename otherT>
 inline Storage<T, Container>::Storage(Shape<otherT> const& shape)
-    : data(shape.calc_size()), shape_(shape), strides_(shape) {}
+    : data(shape.calcSize()), shape_(shape), strides_(shape) {}
 
 template <typename T, typename Container>
 template <typename otherT>
 inline Storage<T, Container>::Storage(Shape<otherT>&& shape)
-    : data(shape.calc_size()), shape_(shape), strides_(shape) {}
+    : data(shape.calcSize()), shape_(shape), strides_(shape) {}
 
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 1> l)
@@ -174,34 +178,34 @@ inline Storage<T, Container>::Storage(nested_init_list_t<T, 1> l)
 
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 2> l) : shape_(l), strides_(shape_) {
-  data.reserve(shape().calc_size());
+  data.reserve(shape().calcSize());
   fillStorage(l);
 }
 
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 3> l) : shape_(l), strides_(shape_) {
-  data.reserve(shape().calc_size());
+  data.reserve(shape().calcSize());
   fillStorage(l);
 }
 
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 4> l) : shape_(l), strides_(shape_) {
-  data.reserve(shape().calc_size());
+  data.reserve(shape().calcSize());
   fillStorage(l);
 }
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 5> l) : shape_(l), strides_(shape_) {
-  data.reserve(shape().calc_size());
+  data.reserve(shape().calcSize());
   fillStorage(l);
 }
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 6> l) : shape_(l), strides_(shape_) {
-  data.reserve(shape().calc_size());
+  data.reserve(shape().calcSize());
   fillStorage(l);
 }
 template <typename T, typename Container>
 inline Storage<T, Container>::Storage(nested_init_list_t<T, 7> l) : shape_(l), strides_(shape_) {
-  data.reserve(shape().calc_size());
+  data.reserve(shape().calcSize());
   fillStorage(l);
 }
 
@@ -450,7 +454,7 @@ inline auto Storage<T, Container>::view(Arg arg, Args... args)
 template <typename T, typename Container>
 template <class Arg, class... Args>
 inline auto Storage<T, Container>::view(Arg arg, Args... args) const
-    -> Storage<pointer_type_const, vector<pointer_type_const>> {
+    -> Storage<pointer_type_const, vector<pointer_type_const> const> {
   // check enough correct number of dimensions are indexed
   size_t num_dims = sizeof...(args) + 1;
   if (num_dims != shape_.ndims()) {
@@ -480,7 +484,7 @@ inline auto Storage<T, Container>::view(Arg arg, Args... args) const
 
   // create view and return it
   Shape<pointer_type_const> s(std::move(view_shape));
-  return Storage<pointer_type_const, vector<pointer_type_const>>(view_storage, s);
+  return Storage<pointer_type_const, vector<pointer_type_const> const>(view_storage, s);
 }
 
 template <typename T, typename Container>
@@ -490,9 +494,9 @@ inline auto Storage<T, Container>::view() -> Storage<T, Container_ref> {
 }
 
 template <typename T, typename Container>
-inline auto Storage<T, Container>::view() const -> Storage<T, Container_ref_const> {
+inline auto Storage<T, Container>::view() const -> Storage<T, Container_ref_const const> {
   Container_ref_const c(data);
-  return Storage<T, Container_ref_const>(c, shape_);
+  return Storage<T, Container_ref_const const>(c, shape_);
 }
 
 template <typename T, typename Container>
@@ -505,6 +509,48 @@ inline auto Storage<T, Container>::copy() const -> Storage<base_type, vector<bas
   return Storage<base_type, vector<base_type>>(c, shape_);
 }
 
+/* diagonal */
+template <typename T, typename Container>
+inline auto Storage<T, Container>::diagonal() -> Storage<pointer_type, vector<pointer_type>> {
+  // check matrix is square
+  auto const height = shape_[0];
+  for (auto d : shape_.getShape()) {
+    if (d != height) throw NonSquareMatrix(shape_.getShape());
+  }
+
+  auto const ndims = shape_.ndims();
+  vector<int> index(ndims);
+  vector<pointer_type> diag;
+  diag.reserve(height);
+  for (auto i = 0u; i < height; i++) {
+    index.assign(ndims, i);
+    diag.push_back(&getElement(computeFlattenedIndex(strides_, shape_, index), data));
+  }
+
+  return Storage<pointer_type, vector<pointer_type>>(diag);
+}
+
+template <typename T, typename Container>
+inline auto Storage<T, Container>::diagonal() const
+    -> Storage<pointer_type_const, vector<pointer_type_const> const> {
+  // check matrix is square
+  auto const height = shape_[0];
+  for (auto d : shape_.getShape()) {
+    if (d != height) throw NonSquareMatrix(shape_.getShape());
+  }
+
+  auto const ndims = shape_.ndims();
+  vector<int> index(ndims);
+  vector<pointer_type_const> diag;
+  diag.reserve(height);
+  for (auto i = 0u; i < height; i++) {
+    index.assign(ndims, i);
+    diag.push_back(&getElement(computeFlattenedIndex(strides_, shape_, index), data));
+  }
+
+  return Storage<pointer_type_const, vector<pointer_type_const> const>(diag);
+}
+
 /* reshape */
 template <typename T, typename Container>
 inline auto Storage<T, Container>::reshape(initializer_list<size_t> l)
@@ -513,7 +559,7 @@ inline auto Storage<T, Container>::reshape(initializer_list<size_t> l)
   Shape new_shape = Shape(vector<size_t>{l});
 
   // check dimensions match
-  if (!shape_.is_equivalent(new_shape)) {
+  if (!shape_.isEquivalent(new_shape)) {
     throw DimensionsMismatchError(new_shape.getShape(), shape_.getShape());
   }
 
@@ -549,7 +595,7 @@ inline void Storage<T, Container>::resize(initializer_list<size_t> l) {
   Shape new_shape = Shape(vector<size_t>{l});
 
   // check dimensions match
-  if (!shape_.is_equivalent(new_shape)) {
+  if (!shape_.isEquivalent(new_shape)) {
     throw DimensionsMismatchError(new_shape.getShape(), shape_.getShape());
   }
   shape_ = new_shape;

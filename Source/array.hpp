@@ -14,7 +14,6 @@
 #include "storage.hpp"
 #include "utilities.hpp"
 
-
 namespace npp {
 
 using std::initializer_list;
@@ -110,16 +109,25 @@ class array {
   array<T, Container_ref> view() { return array<T, Container_ref>(storage.view()); }
 
   template <class Arg, class... Args>
-  array<pointer_type_const, vector<pointer_type_const>> view(Arg arg, Args... args) const {
-    return array<pointer_type_const, vector<pointer_type_const>>(storage.view(arg, args...));
+  array<pointer_type_const, vector<pointer_type_const> const> view(Arg arg, Args... args) const {
+    return array<pointer_type_const, vector<pointer_type_const> const>(storage.view(arg, args...));
   }
 
-  array<T, Container_ref_const> view() const {
-    return array<T, Container_ref_const>(storage.view());
+  array<T, Container_ref_const const> view() const {
+    return array<T, Container_ref_const const>(storage.view());
   }
 
   array<base_type, vector<base_type>> copy() const {
     return array<base_type, vector<base_type>>(storage.copy());
+  }
+
+  /* diagonal */
+  array<pointer_type, vector<pointer_type>> diagonal() {
+    return array<pointer_type, vector<pointer_type>>(storage.diagonal());
+  }
+
+  array<pointer_type_const, vector<pointer_type_const> const> diagonal() const {
+    return array<pointer_type_const, vector<pointer_type_const> const>(storage.diagonal());
   }
 
   /* reshape */

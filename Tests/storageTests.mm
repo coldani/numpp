@@ -1222,4 +1222,72 @@
     XCTAssertEqual(cs(0, 2), 300);
 }
 
+- (void)testDiagonal {
+    npp::Storage<int> s{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    auto d = s.diagonal();
+
+    XCTAssertEqual(d.shape().ndims(), 1);
+    XCTAssertEqual(d.size(), 3);
+    XCTAssertEqual(d(0), 1);
+    XCTAssertEqual(d(1), 5);
+    XCTAssertEqual(d(2), 9);
+    
+    s(0, 0) = 100;
+    XCTAssertEqual(s(0,0), 100);
+    XCTAssertEqual(d(0), 100);
+    d(1) = 500;
+    XCTAssertEqual(s(1,1), 500);
+    XCTAssertEqual(d(1), 500);
+}
+
+- (void)testConstDiagonal {
+    npp::Storage<int> const s{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    auto d = s.diagonal();
+
+    XCTAssertEqual(d.shape().ndims(), 1);
+    XCTAssertEqual(d.size(), 3);
+    XCTAssertEqual(d(0), 1);
+    XCTAssertEqual(d(1), 5);
+    XCTAssertEqual(d(2), 9);
+}
+
+
+- (void)testDiagonal3D {
+    npp::Storage<int> s{
+        {{1, 2}, {3, 4}},
+        {{5, 6}, {7, 8}}
+    };
+    auto d = s.diagonal();
+
+    XCTAssertEqual(d.shape().ndims(), 1);
+    XCTAssertEqual(d.size(), 2);
+    XCTAssertEqual(d(0), 1);
+    XCTAssertEqual(d(1), 8);
+}
+
+
+- (void)testDiagonalException {
+    try {
+    npp::Storage<int> s{{1, 2, 3}, {4, 5, 6}};
+    auto d = s.diagonal();
+        XCTAssertTrue(false);
+    } catch (npp::NonSquareMatrix) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+
+    try {
+    npp::Storage<int> const s{{1, 2, 3}, {4, 5, 6}};
+    auto d = s.diagonal();
+        XCTAssertTrue(false);
+    } catch (npp::NonSquareMatrix) {
+        XCTAssertTrue(true);
+    } catch (...) {
+        XCTAssertTrue(false);
+    }
+}
+
+
+
 @end
