@@ -7,7 +7,7 @@
 
 #import <XCTest/XCTest.h>
 
-#import "array_creators.hpp"
+#import "numpp.hpp"
 
 @interface FullTests : XCTestCase
 
