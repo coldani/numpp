@@ -42,14 +42,14 @@ class array {
   template <typename oneT, typename oneC, typename twoT, typename twoC>
   base_type oneDotOne(array<oneT, oneC> const& one, array<twoT, twoC> const& two) const;
   template <typename otherT, typename otherC>
-  array<base_type, Container_noref> oneDotTwo(array<T, Container> const& one,
-                                              array<otherT, otherC> const& two) const;
+  array<base_type, vector<base_type>> oneDotTwo(array<T, Container> const& one,
+                                                array<otherT, otherC> const& two) const;
   template <typename otherT, typename otherC>
-  array<base_type, Container_noref> twoDotOne(array<T, Container> const& one,
-                                              array<otherT, otherC> const& two) const;
+  array<base_type, vector<base_type>> twoDotOne(array<T, Container> const& one,
+                                                array<otherT, otherC> const& two) const;
   template <typename otherT, typename otherC>
-  array<base_type, Container_noref> twoDotTwo(array<T, Container> const& one,
-                                              array<otherT, otherC> const& two) const;
+  array<base_type, vector<base_type>> twoDotTwo(array<T, Container> const& one,
+                                                array<otherT, otherC> const& two) const;
 
  public:
   /*
@@ -200,7 +200,7 @@ class array {
 
   /* dot product */
   template <typename otherT, typename otherC>
-  array<base_type, Container_noref> dot(array<otherT, otherC> const& other) const;
+  array<base_type, vector<base_type>> dot(array<otherT, otherC> const& other) const;
 };
 
 /*************************
@@ -506,7 +506,7 @@ inline bool array<T, Container>::all() const {
 template <typename T, typename Container>
 template <typename otherT, typename otherC>
 inline auto array<T, Container>::dot(array<otherT, otherC> const& other) const
-    -> array<base_type, Container_noref> {
+    -> array<base_type, vector<base_type>> {
   // perform dimensions checking
   checkDimensionsForDotProduct(other);
 
@@ -534,9 +534,9 @@ template <typename T, typename Container>
 template <typename otherT, typename otherC>
 inline auto array<T, Container>::oneDotTwo(array<T, Container> const& one,
                                            array<otherT, otherC> const& two) const
-    -> array<base_type, Container_noref> {
+    -> array<base_type, vector<base_type>> {
   auto const size = two.shape()[1];
-  array<base_type, Container_noref> result(size);
+  array<base_type, vector<base_type>> result(size);
   for (auto col = 0u; col < size; col++) {
     result(col) = oneDotOne(one, two.view(npp::all(), col));
   }
@@ -547,9 +547,9 @@ template <typename T, typename Container>
 template <typename otherT, typename otherC>
 inline auto array<T, Container>::twoDotOne(array<T, Container> const& one,
                                            array<otherT, otherC> const& two) const
-    -> array<base_type, Container_noref> {
+    -> array<base_type, vector<base_type>> {
   auto const size = one.shape()[0];
-  array<base_type, Container_noref> result(size);
+  array<base_type, vector<base_type>> result(size);
   for (auto row = 0u; row < size; row++) {
     result(row) = oneDotOne(one.view(row, npp::all()), two);
   }
@@ -560,11 +560,11 @@ template <typename T, typename Container>
 template <typename otherT, typename otherC>
 inline auto array<T, Container>::twoDotTwo(array<T, Container> const& one,
                                            array<otherT, otherC> const& two) const
-    -> array<base_type, Container_noref> {
+    -> array<base_type, vector<base_type>> {
   auto const rows = one.shape()[0];
   auto const cols = two.shape()[1];
   auto const size = rows * cols;
-  array<base_type, Container_noref> result(size);
+  array<base_type, vector<base_type>> result(size);
   result.resize({rows, cols});
   for (auto row = 0u; row < rows; row++) {
     for (auto col = 0u; col < cols; col++)
