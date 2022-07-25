@@ -250,14 +250,13 @@ int main() {
 
   /* Dot product: 2D * 2D */
   mat = npp::array<int>({{1, 2}, {3, 4}, {5, 6}});
-  auto tt = mat.transpose();
-  auto dot22 = tt.dot(mat);
+  auto dot22 = mat.transpose().dot(mat);
   cout << "mat = npp::array<int>({{1, 2}, {3, 4}, {5, 6}})\n";
-  cout << "auto dot22 = mat.dot(mat.transpose())\n";
+  cout << "auto dot22 = mat.transpose().dot(mat)\n";
   cout << "Number of dimensions: " << dot22.shape().ndims() << endl;            // out: 2
   cout << "Shape: (" << dot22.shape()[0] << ", " << dot22.shape()[1] << ")\n";  // out: (2, 2)
   cout << "dot22(0, 0), dot22(0, 1), dot22(1, 0), dot22(1, 1): " << dot22(0, 0) << ", "
-       << dot22(0, 1) << ", " << dot22(1, 0) << ", " << dot22(1, 1) << endl;  // out: 34, 44, 44, 56
+       << dot22(0, 1) << ", " << dot22(1, 0) << ", " << dot22(1, 1) << endl;  // out: 35, 44, 44, 56
   cout << "===================\n";
 
   /*
