@@ -57,19 +57,19 @@ auto e = npp::eye<int>(2, -1);
 auto e1 = npp::eye<int>(3);
 ```
 
-`npp::array` properties can be inspected as follows:
+`array` properties can be inspected as follows:
 ```
 // Create a 2D array with shape (2, 3)
 auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}};
 
 // array size
-arr.size()      // 6
+arr.size()                 // 6
 
 // Let's get the shape
 auto s = arr.shape()
-s.ndims()       // 2
-s[0]            // 2
-s[1]            // 3
+s.ndims()                  // 2
+s[0]                       // 2
+s[1]                       // 3
 ```
 
 ### Reshaping
@@ -107,11 +107,11 @@ int e = arr(0, 1);
 e = arr(1, 0);
 
 // elements can also be accessed sequentially (row-major order)
-e = arr[0] // equivalent to arr(0, 0)
-e = arr[1] // equivalent to arr(0, 1)
+e = arr[0]                             // equivalent to arr(0, 0)
+e = arr[1]                             // equivalent to arr(0, 1)
 ```
 
-Negative indices are allowed. -1 indicates the last position, -2 the second-to-last position, etc:
+Negative indices are allowed. `-1` indicates the last position, `-2` the second-to-last position, etc:
 ```
 // first row, last column
 e = arr(0, -1)
@@ -128,7 +128,7 @@ e = arr[-2]
 
 ### Views and copies
 Views allow to create array that share (some of) the data of another array.
-They can be resized differently than the array they share the data with.
+They can be resized differently than the array they share the data with:
 ```
 // Let's start with our usual array
 auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}};
@@ -140,10 +140,10 @@ auto v = arr.view();
 v.resize({3, 2});
 
 // by changing values in arr we change values in v...
-arr(0, 0) = 100; // both arr(0, 0) and v(0, 0) now equal 100
+arr(0, 0) = 100;                    // both arr(0, 0) and v(0, 0) now equal 100
 
 // ...and vice-versa 
-v(1, 0) = 300; // v(1, 0) and arr(0, 2) (remember shapes are different!) are now 300
+v(1, 0) = 300;                      // v(1, 0) and arr(0, 2) (remember shapes are different!) are now 300
 ```
 
 Copies are arrays created equal to another array but that do not share the same data:
@@ -155,51 +155,51 @@ auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}};
 auto c = arr.copy();
 
 // changing arr content does not change c...
-arr(0, 0) = 100; // arr(0, 0) is now 100, c(0, 0) is still 1
+arr(0, 0) = 100;                    // arr(0, 0) is now 100, c(0, 0) is still 1
 
 // ...and vice-versa
-c(0, 1) = 200; // c(0, 1) is now 200, arr(0, 1) is still 2
+c(0, 1) = 200;                      // c(0, 1) is now 200, arr(0, 1) is still 2
 ```
 
-We can make views on only some sections of an array using indices and helper functions such as all(), range() and slice():
+We can make views on only some sections of an array using integer indices (such as `0`, `1` or `-1`) and helper functions such as `all()`, `range()` and `slice()`:
 ```
 // Usual array
 auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}};
 
 // View on the first row
-auto v = arr.view(0, npp::all()); // v has shape (1, 3)
+auto v = arr.view(0, npp::all());                     // v has shape (1, 3)
 
 // View on the last column
-auto v1 = arr.view(npp::all(), -1); // v1 has shape (2, 1)
+auto v1 = arr.view(npp::all(), -1);                   // v1 has shape (2, 1)
 
 // View on first and last column
-auto v2 = arr.view(npp::all(), npp::slice({0, -1})); // shape (2, 2)
+auto v2 = arr.view(npp::all(), npp::slice({0, -1}));  // shape (2, 2)
 
 // View on first up to third column
-auto v2 = arr.view(npp::all(), npp::range(0, 2)); // shape (2, 3)
+auto v2 = arr.view(npp::all(), npp::range(0, 2));     // shape (2, 3)
 
 // Range accepts a step parameter (defaulting to 1)
 // View on arr with columns reversed
 auto v3 = arr.view(npp::all(), npp::range(0, -1, -1)) // v3(0, 0) is equal to arr(0, -1), i.e. arr(0, 2)
 ```
 
-Note that reshape() and flatten() return views of arrays.
-In addition, one can use diagonal() and transpose() to return views of the main diagonal and of the transposed array
+Note that `array.reshape()` and `array.flatten()` (discussed previously) return views of arrays.
+In addition, one can use `array.diagonal()` and `array.transpose()` to return views of the main diagonal and of the transposed array:
 ```
 // Let's make a (2, 2) array
 auto square = npp::array<int> {{1, 2}, {3, 4}};
 
 // view on main diagonal of square
-auto diag = square.diagonal(); // 1 dim with size 2
-auto e = d(0); // e is 1
-e = d(1); // e is 4
+auto diag = square.diagonal();                     // 1 dim with size 2
+auto e = d(0);                                     // e is 1
+e = d(1);                                          // e is 4
 
 // transposed of our usual array
 auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}}; // shape (2, 3)
-auto t = arr.transpose(); // t has shape (3, 2)
-e = t(0, 0) // 1
-e = t(0, 1) // 4
-e = t(1, 0) // 2
+auto t = arr.transpose();                          // t has shape (3, 2)
+e = t(0, 0)                                        // 1
+e = t(0, 1)                                        // 4
+e = t(1, 0)                                        // 2
 ```
 
 ### Array operations
@@ -212,7 +212,7 @@ Operations with scalars:
 auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}};
 
 // add a scalar
-auto result = arr + 1; // result(0, 0) is 2, result(0, 1) is 3, ..., result(-1, -1) is 7
+auto result = arr + 1;                    // result(0, 0) is 2, result(0, 1) is 3, ..., result(-1, -1) is 7
 
 // other operations are defined as well
 result = arr - 1;
@@ -228,7 +228,7 @@ auto arr = npp::array<int> {{1, 2, 3}, {4, 5, 6}};
 auto other = npp::array<int> {{7, 8, 9}, {10, 11, 12}};
 
 // add the two arrays
-auto result = arr + other; // result(0, 0) is 8, ..., result(-1, -1) is 18
+auto result = arr + other;                 // result(0, 0) is 8, ..., result(-1, -1) is 18
 
 // other operations are defined as well
 result = arr - other;
@@ -245,16 +245,16 @@ auto vec1 = npp::array<int>({1, 2});                    // shape: (2)
 auto vec2 = npp::array<int>({3, 4});                    // shape: (2)
 
 // dot product of 2 1D arrays returns an array with size 1
-auto dot = vec1.dot(vec2); // dot(0) is 11
+auto dot = vec1.dot(vec2);                               // dot(0) is 11
 
 // dot product of array (n, m) with array (m) returns array (n)
-auto dot1 = mat.dot(vec1); // dot1(0), dot1(1), dot1(2) = 5, 11, 17
+auto dot1 = mat.dot(vec1);                               // dot1(0), dot1(1), dot1(2) = 5, 11, 17
 
 // dot product of array (m) with array (m, n) returns array (n)
-auto dot2 = vec1.dot(mat.transpose()); // dot2(0), dot2(1), dot2(2) = 5, 11, 17
+auto dot2 = vec1.dot(mat.transpose());                   // dot2(0), dot2(1), dot2(2) = 5, 11, 17
 
 // dot product of array (n, m) with array (m, k) returns array (n, k)
-auto dot3 = mat.tranpose().dot(mat); // dot3(0, 0), dot3(0, 1), dot3(1, 0), dot3(1, 1) = 35, 44, 44, 56
+auto dot3 = mat.tranpose().dot(mat);                     // dot3(0, 0), dot3(0, 1), dot3(1, 0), dot3(1, 1) = 35, 44, 44, 56
 ```
 
 ### Comparison operators
@@ -266,7 +266,7 @@ Comparisons with scalars:
 ```
 // define an array
 auto arr = npp::array<int>{1, 2, 3};
-auto comp = arr == 3; // array with values {false, false, true}
+auto comp = arr == 3;                     // array with values {false, false, true}
 
 // other scalar comparison operations
 comp = arr > 3;
@@ -282,7 +282,7 @@ auto first = npp::array<int>{1, 2, 3};
 auto second = npp::array<int>{2, 2, 2};
 
 // compare the two
-auto comp = first == second; // array with values {false, true, false}
+auto comp = first == second;              // array with values {false, true, false}
 
 // other comparisons are defined as well
 comp = first > second;
@@ -296,10 +296,10 @@ comp = first <= second;
 auto arr = npp::array<int>{1, 2, 3};
 
 auto comp = arr == 3;
-comp.any(); // true
-comp.all() // false
+comp.any();                // true
+comp.all()                 // false
 
 auto comp = arr <= 3;
-comp.any(); // true
-comp.all() // true
+comp.any();                // true
+comp.all()                 // true
 ```
