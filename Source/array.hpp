@@ -87,63 +87,36 @@ class array {
   size_t size() const noexcept { return storage.size(); }
 
   /* indexing */
-  base_type const& operator[](int i) const { return storage[i]; }
-  base_type& operator[](int i) { return storage[i]; }
+  base_type const& operator[](int i) const;
+  base_type& operator[](int i);
 
   template <class Arg, class... Args>
-  base_type const& operator()(Arg arg, Args... args) const {
-    return storage(arg, args...);
-  }
-
+  base_type const& operator()(Arg arg, Args... args) const;
   template <class Arg, class... Args>
-  base_type& operator()(Arg arg, Args... args) {
-    return storage(arg, args...);
-  }
+  base_type& operator()(Arg arg, Args... args);
 
   /* view & copy */
+  array<T, Container_ref> view();
   template <class Arg, class... Args>
-  array<pointer_type, vector<pointer_type>> view(Arg arg, Args... args) {
-    return array<pointer_type, vector<pointer_type>>(storage.view(arg, args...));
-  }
+  array<pointer_type, vector<pointer_type>> view(Arg arg, Args... args);
 
-  array<T, Container_ref> view() { return array<T, Container_ref>(storage.view()); }
-
+  array<T, Container_ref_const const> view() const;
   template <class Arg, class... Args>
-  array<pointer_type_const, vector<pointer_type_const> const> view(Arg arg, Args... args) const {
-    return array<pointer_type_const, vector<pointer_type_const> const>(storage.view(arg, args...));
-  }
+  array<pointer_type_const, vector<pointer_type_const> const> view(Arg arg, Args... args) const;
 
-  array<T, Container_ref_const const> view() const {
-    return array<T, Container_ref_const const>(storage.view());
-  }
-
-  array<base_type, vector<base_type>> copy() const {
-    return array<base_type, vector<base_type>>(storage.copy());
-  }
+  array<base_type, vector<base_type>> copy() const;
 
   /* diagonal */
-  array<pointer_type, vector<pointer_type>> diagonal() {
-    return array<pointer_type, vector<pointer_type>>(storage.diagonal());
-  }
-
-  array<pointer_type_const, vector<pointer_type_const> const> diagonal() const {
-    return array<pointer_type_const, vector<pointer_type_const> const>(storage.diagonal());
-  }
+  array<pointer_type, vector<pointer_type>> diagonal();
+  array<pointer_type_const, vector<pointer_type_const> const> diagonal() const;
 
   /* reshape */
-  array<T, Container_ref> reshape(initializer_list<size_t> l) {
-    return array<T, Container_ref>(storage.reshape(l));
-  }
+  array<T, Container_ref> reshape(initializer_list<size_t> l);
+  array<T, Container_ref> flatten();
+  array<pointer_type, vector<pointer_type>> transpose();
 
-  array<T, Container_ref> flatten() { return array<T, Container_ref>(storage.flatten()); }
-
-  array<pointer_type, vector<pointer_type>> transpose() {
-    return array<pointer_type, vector<pointer_type>>(storage.transpose());
-  }
-
-  void resize(initializer_list<size_t> l) { storage.resize(l); }
-
-  void resize_flat() { storage.resize_flat(); }
+  void resize(initializer_list<size_t> l);
+  void resize_flat();
 
   /*
    * Non-Trivial member functions
@@ -236,6 +209,97 @@ inline void array<T, Container>::checkDimensionsForDotProduct(
   } else if (dims == 2 && o_dims == 2) {
     if (s[1] != o_s[0]) throw DimensionsMismatchError(s.getShape(), o_s.getShape());
   }
+}
+
+/* indexing */
+template <typename T, typename Container>
+inline auto array<T, Container>::operator[](int i) const -> base_type const& {
+  return storage[i];
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::operator[](int i) -> base_type& {
+  return storage[i];
+}
+
+template <typename T, typename Container>
+template <class Arg, class... Args>
+inline auto array<T, Container>::operator()(Arg arg, Args... args) const -> base_type const& {
+  return storage(arg, args...);
+}
+
+template <typename T, typename Container>
+template <class Arg, class... Args>
+inline auto array<T, Container>::operator()(Arg arg, Args... args) -> base_type& {
+  return storage(arg, args...);
+}
+
+/* view & copy */
+template <typename T, typename Container>
+template <class Arg, class... Args>
+inline auto array<T, Container>::view(Arg arg, Args... args)
+    -> array<pointer_type, vector<pointer_type>> {
+  return array<pointer_type, vector<pointer_type>>(storage.view(arg, args...));
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::view() -> array<T, Container_ref> {
+  return array<T, Container_ref>(storage.view());
+}
+
+template <typename T, typename Container>
+template <class Arg, class... Args>
+inline auto array<T, Container>::view(Arg arg, Args... args) const
+    -> array<pointer_type_const, vector<pointer_type_const> const> {
+  return array<pointer_type_const, vector<pointer_type_const> const>(storage.view(arg, args...));
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::view() const -> array<T, Container_ref_const const> {
+  return array<T, Container_ref_const const>(storage.view());
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::copy() const -> array<base_type, vector<base_type>> {
+  return array<base_type, vector<base_type>>(storage.copy());
+}
+
+/* diagonal */
+template <typename T, typename Container>
+inline auto array<T, Container>::diagonal() -> array<pointer_type, vector<pointer_type>> {
+  return array<pointer_type, vector<pointer_type>>(storage.diagonal());
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::diagonal() const
+    -> array<pointer_type_const, vector<pointer_type_const> const> {
+  return array<pointer_type_const, vector<pointer_type_const> const>(storage.diagonal());
+}
+
+/* reshape */
+template <typename T, typename Container>
+inline auto array<T, Container>::reshape(initializer_list<size_t> l) -> array<T, Container_ref> {
+  return array<T, Container_ref>(storage.reshape(l));
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::flatten() -> array<T, Container_ref> {
+  return array<T, Container_ref>(storage.flatten());
+}
+
+template <typename T, typename Container>
+inline auto array<T, Container>::transpose() -> array<pointer_type, vector<pointer_type>> {
+  return array<pointer_type, vector<pointer_type>>(storage.transpose());
+}
+
+template <typename T, typename Container>
+inline void array<T, Container>::resize(initializer_list<size_t> l) {
+  storage.resize(l);
+}
+
+template <typename T, typename Container>
+inline void array<T, Container>::resize_flat() {
+  storage.resize_flat();
 }
 
 /* operators overloading */
